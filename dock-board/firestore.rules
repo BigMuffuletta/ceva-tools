@@ -1,0 +1,56 @@
+rules_version = '2';
+
+// Receiving dock board — Firestore security rules.
+// Paste into Firebase console → Firestore Database → Rules, then Publish.
+//
+// Access is by role, stored at roles/{uid}:
+//   viewer     → can see the board (TV screens)
+//   supervisor → can also add and update trucks, the notice, owner names and clock
+//   admin      → can also change branding and manage people
+// Anyone who signs in without a roles document sees nothing.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function roleDoc() {
+      return /databases/$(database)/documents/roles/$(request.auth.uid);
+    }
+    function hasRole(roles) {
+      return request.auth != null && exists(roleDoc()) && get(roleDoc()).data.role in roles;
+    }
+    function isViewer()     { return hasRole(['viewer', 'supervisor', 'admin']); }
+    function isSupervisor() { return hasRole(['supervisor', 'admin']); }
+    function isAdmin()      { return hasRole(['admin']); }
+
+    // Trucks on the board
+    match /loads/{loadId} {
+      allow read: if isViewer();
+      allow create, update: if isSupervisor()
+        && request.resource.data.kind in ['drop', 'appt']
+        && request.resource.data.status in ['scheduled', 'arrived', 'door', 'unloading', 'received']
+        && request.resource.data.priority in [1, 2, 3]
+        && request.resource.data.size() <= 20;
+      allow delete: if isSupervisor();
+    }
+
+    // Notice, owner names, clock format
+    match /board/{docId} {
+      allow read: if isViewer();
+      allow write: if isSupervisor() && request.resource.data.size() <= 20;
+    }
+
+    // Site name and TV colors
+    match /admin/{docId} {
+      allow read: if isViewer();
+      allow write: if isAdmin();
+    }
+
+    // Who can use the board. Each person can read their own role.
+    match /roles/{uid} {
+      allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
+      allow create, update: if isAdmin()
+        && request.resource.data.role in ['viewer', 'supervisor', 'admin'];
+      allow delete: if isAdmin() && request.auth.uid != uid;
+    }
+  }
+}

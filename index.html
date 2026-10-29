@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>CEVA Tools</title>
+<link rel="icon" href="assets/ceva-logo.svg" type="image/svg+xml">
+<style>
+  :root{--bg:#eef2f8;--panel:#fff;--line:#d2dbe8;--fg:#0b1a33;--muted:#4f6383;--navy:#1D2546;--red:#E30613;color-scheme:light}
+  @media (prefers-color-scheme:dark){:root{--bg:#0b1630;--panel:#111f3d;--line:#22365c;--fg:#f1f5fb;--muted:#9fb1cc;color-scheme:dark}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  header{background:#fff;border-bottom:4px solid var(--red);padding:1rem max(16px,env(safe-area-inset-left,0px))}
+  header img{height:2.4rem;display:block}
+  main{max-width:720px;margin:0 auto;padding:1.5rem max(16px,env(safe-area-inset-right,0px)) 3rem max(16px,env(safe-area-inset-left,0px))}
+  h1{font-size:1.4rem;margin:0 0 1rem}
+  a.tool{display:block;background:var(--panel);border:1px solid var(--line);border-radius:.5rem;padding:1rem 1.1rem;color:inherit;text-decoration:none}
+  a.tool:hover,a.tool:focus-visible{border-color:var(--muted)}
+  a.tool b{display:block;font-size:1.1rem}
+  a.tool span{color:var(--muted);font-size:.95rem}
+</style>
+</head>
+<body>
+<header><img src="assets/ceva-logo.svg" alt="CEVA Logistics"></header>
+<main>
+  <h1>Site tools</h1>
+  <a class="tool" href="dock-board/"><b>Receiving dock board</b><span>Floor TV display of the drop and today's appointments, updated by supervisors from a phone.</span></a>
+</main>
+</body>
+</html>

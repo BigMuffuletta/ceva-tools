@@ -1,0 +1,1173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Receiving Dock Board</title>
+<link rel="icon" href="../assets/ceva-logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700;800&display=swap">
+<style>
+/* Layout: TV board = navy brand band + two equal panels (in the drop | today's appointments) filling one screen, paginating rows; supervisor screen = one phone-width column of truck cards with a bottom-sheet editor. Dark-first. */
+:root{
+  --navy:#1D2546; --red:#E30613;
+  --bg:#071a33; --panel:#0c2445; --row:#10294d; --row-p1:#2a2645; --line:#1f3d68;
+  --fg:#f1f5fb; --muted:#9fb1cc; --faint:#6a80a2;
+  --head:#1D2546; --on-head:#ffffff; --head-muted:#a9bfe0; --head-line:rgba(255,255,255,.16);
+  --head-alert:#ff6a5e; --head-warn:#ffbf47; --head-btn:rgba(255,255,255,.1); --plate:#ffffff;
+  --p1:#ff5a4e; --p1-fill:#e6100d; --on-p1:#ffffff;
+  --p2:#ffb020; --p2-fill:#f5a00f; --on-p2:#1b1300;
+  --p3:#8ea3c2; --p3-fill:#24416b; --on-p3:#dce6f4;
+  --ok:#35c97a; --warn:#ffb020; --track:#2a4a77; --track-on:#f1f5fb;
+  --input:#081d3a; --btn:#163259; --btn-fg:#f1f5fb; --primary:#3d7ee0; --on-primary:#ffffff;
+  --focus:#8cbcff; --scrim:rgba(2,10,24,.66); --toast:#f1f5fb; --on-toast:#071a33;
+  --f-display:"Barlow Condensed","Arial Narrow","Roboto Condensed",system-ui,sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#eef2f8; --panel:#ffffff; --row:#ffffff; --row-p1:#fdeceb; --line:#d2dbe8;
+    --fg:#0b1a33; --muted:#4f6383; --faint:#7a8aa5;
+    --p1:#c80f0b; --p1-fill:#e6100d; --on-p1:#ffffff;
+    --p2:#985700; --p2-fill:#ffb020; --on-p2:#1b1300;
+    --p3:#566b8c; --p3-fill:#dfe6f0; --on-p3:#22344f;
+    --ok:#1b9152; --warn:#9a5d00; --track:#d2dbe8; --track-on:#0b1a33;
+    --input:#ffffff; --btn:#e6ecf5; --btn-fg:#0b1a33; --primary:#002048; --on-primary:#ffffff;
+    --focus:#1f5fbf; --scrim:rgba(10,20,40,.45); --toast:#0b1a33; --on-toast:#ffffff;
+    color-scheme:light;
+  }
+}
+:root[data-theme="light"]{
+  --bg:#eef2f8; --panel:#ffffff; --row:#ffffff; --row-p1:#fdeceb; --line:#d2dbe8;
+  --fg:#0b1a33; --muted:#4f6383; --faint:#7a8aa5;
+  --p1:#c80f0b; --p1-fill:#e6100d; --on-p1:#ffffff;
+  --p2:#985700; --p2-fill:#ffb020; --on-p2:#1b1300;
+  --p3:#566b8c; --p3-fill:#dfe6f0; --on-p3:#22344f;
+  --ok:#1b9152; --warn:#9a5d00; --track:#d2dbe8; --track-on:#0b1a33;
+  --input:#ffffff; --btn:#e6ecf5; --btn-fg:#0b1a33; --primary:#002048; --on-primary:#ffffff;
+  --focus:#1f5fbf; --scrim:rgba(10,20,40,.45); --toast:#0b1a33; --on-toast:#ffffff;
+  color-scheme:light;
+}
+/* TV board forces the dark palette unless the board owner picks "Match screen" */
+:root.force-dark{
+  --bg:#071a33; --panel:#0c2445; --row:#10294d; --row-p1:#2a2645; --line:#1f3d68;
+  --fg:#f1f5fb; --muted:#9fb1cc; --faint:#6a80a2;
+  --p1:#ff5a4e; --p1-fill:#e6100d; --on-p1:#ffffff;
+  --p2:#ffb020; --p2-fill:#f5a00f; --on-p2:#1b1300;
+  --p3:#8ea3c2; --p3-fill:#24416b; --on-p3:#dce6f4;
+  --ok:#35c97a; --warn:#ffb020; --track:#2a4a77; --track-on:#f1f5fb;
+  --input:#081d3a; --btn:#163259; --btn-fg:#f1f5fb; --primary:#3d7ee0; --on-primary:#ffffff;
+  --focus:#8cbcff; --scrim:rgba(2,10,24,.66); --toast:#f1f5fb; --on-toast:#071a33;
+  color-scheme:dark;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{height:100%;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+img{max-width:100%}
+body{height:100%;margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--head)}
+#app{height:100%}
+[hidden]{display:none!important}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ───────── BOARD ───────── */
+.board{min-height:100%;display:flex;flex-direction:column;font-size:15px}
+.gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.b-head{background:var(--head);color:var(--on-head);display:flex;flex-wrap:wrap;align-items:center;gap:.8em 1.4em;padding-block:.8em}
+.b-brand{display:flex;align-items:center;gap:1em;min-width:0}
+.logo-plate{background:var(--plate);border-radius:.25em;padding:.4em .75em;height:3.4em;display:flex;align-items:center}
+.logo-plate img{height:100%;width:auto;max-width:14em;object-fit:contain;display:block}
+.b-eyebrow{font:600 .8em/1.1 var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--head-muted)}
+.b-title{margin:.1em 0 0;font:700 2.1em/1 var(--f-display);letter-spacing:.02em;text-transform:uppercase;text-wrap:balance}
+.b-stats{display:flex;flex-wrap:wrap;margin:0;margin-left:auto}
+.b-stats>div{padding:.2em .9em;border-left:1px solid var(--head-line)}
+.b-stats dt{font:600 .72em/1.15 var(--f-display);letter-spacing:.12em;text-transform:uppercase;color:var(--head-muted);white-space:nowrap}
+.b-stats dd{margin:0;font:700 2.2em/1 var(--f-display);font-variant-numeric:tabular-nums}
+.b-stats .hot dd{color:var(--head-alert)}
+.b-stats .warn dd{color:var(--head-warn)}
+.b-clock{padding-left:1.1em;border-left:1px solid var(--head-line);text-align:right}
+.b-clock .t{font:700 2.6em/1 var(--f-display);font-variant-numeric:tabular-nums;white-space:nowrap}
+.b-clock .t small{font-size:.45em;margin-left:.2em;letter-spacing:.06em}
+.b-clock .d{font:600 .8em/1.2 var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--head-muted);white-space:nowrap}
+.b-rule{height:.3em;background:var(--red);flex:none}
+
+.b-cols{display:grid;grid-template-columns:1fr;gap:1.4em;padding-block:1em .8em;flex:1}
+.b-panel{display:flex;flex-direction:column;min-width:0;min-height:0}
+.p-head{display:flex;align-items:baseline;gap:.55em;padding-bottom:.45em;border-bottom:2px solid var(--line)}
+.p-head h2{margin:0;font:700 1.5em/1 var(--f-display);letter-spacing:.06em;text-transform:uppercase}
+.p-count{font:700 1.5em/1 var(--f-display);color:var(--muted);font-variant-numeric:tabular-nums}
+.p-page{margin-left:auto;font:600 .8em/1 var(--f-display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.p-cols{display:none;column-gap:.8em;padding:.55em 0 .35em}
+.p-cols span{font:600 .68em/1 var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--faint);white-space:nowrap}
+.p-list{display:flex;flex-direction:column;gap:.35em;padding-top:.5em}
+
+.row{display:grid;grid-template-columns:3.4em minmax(0,1fr) minmax(0,1fr) auto;grid-template-areas:"prio unit unit when" "prio door owner path";column-gap:.8em;align-items:center;background:var(--row);border-radius:.2em;overflow:hidden;min-height:3.7em;padding-right:.8em}
+.row.p1{background:var(--row-p1);box-shadow:inset 0 0 0 1px var(--p1-fill)}
+.c-prio{grid-area:prio;align-self:stretch;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.2em;background:var(--p3-fill);color:var(--on-p3)}
+.c-prio .pn{font:800 1.35em/1 var(--f-display)}
+.c-prio .pl{font:700 .55em/1 var(--f-display);letter-spacing:.05em;text-transform:uppercase}
+.p1 .c-prio{background:var(--p1-fill);color:var(--on-p1)}
+.p2 .c-prio{background:var(--p2-fill);color:var(--on-p2)}
+.c-unit{grid-area:unit;min-width:0;padding-top:.5em}
+.u-main{font:700 1.35em/1.1 var(--f-display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.u-main .b{font-weight:500;color:var(--muted);margin-left:.4em}
+.u-sub{margin-top:.2em;font:500 .8em/1.2 var(--f-body);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-door{grid-area:door;display:flex;align-items:baseline;gap:.4em;min-width:0;padding-bottom:.5em}
+.c-door .v{font:700 1.45em/1 var(--f-display);white-space:nowrap}
+.k{font:600 .62em/1 var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.c-when{grid-area:when;text-align:right;padding-top:.5em}
+.c-when .v{font:700 1.35em/1 var(--f-display);font-variant-numeric:tabular-nums;white-space:nowrap}
+.c-when .v small{font-size:.55em;margin-left:.15em;letter-spacing:.05em}
+.c-when .s{margin-top:.25em;font:600 .68em/1.1 var(--f-display);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.c-when.aging .v{color:var(--warn)}
+.c-when.late .v{color:var(--p1)}
+.tag-late{display:inline-block;background:var(--p1-fill);color:var(--on-p1);padding:.18em .45em;border-radius:.15em;letter-spacing:.1em;font-weight:700}
+.c-owner{grid-area:owner;min-width:0;font:600 1.15em/1.1 var(--f-display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-bottom:.5em}
+.unassigned{font:700 .72em/1 var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--warn);border:1px dashed currentColor;border-radius:.2em;padding:.25em .45em;display:inline-block}
+.c-path{grid-area:path;display:flex;flex-direction:column;align-items:flex-end;gap:.3em;padding-bottom:.5em}
+.trk{display:flex;gap:.18em}
+.trk i{display:block;width:1.5em;height:.42em;border-radius:.1em;background:var(--track)}
+.trk i.on{background:var(--track-on)}
+.trk i.cur{background:var(--ok)}
+.c-path .lbl{font:700 .7em/1 var(--f-display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.c-path.go .lbl{color:var(--ok)}
+
+.empty{border:2px dashed var(--line);border-radius:.3em;padding:1.4em 1.2em;color:var(--muted);display:flex;flex-direction:column;gap:.35em}
+.empty strong{font:700 1.3em/1.1 var(--f-display);text-transform:uppercase;letter-spacing:.06em;color:var(--fg)}
+.empty span{font-size:.9em;line-height:1.4}
+
+.b-foot{display:flex;flex-wrap:wrap;align-items:center;gap:.6em 1.2em;padding-block:.55em .7em;border-top:1px solid var(--line)}
+.legend{display:flex;gap:.5em;flex:none}
+.legend span{display:inline-flex;align-items:center;gap:.35em;font:700 .72em/1 var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.legend b{display:inline-block;padding:.25em .4em;border-radius:.15em;background:var(--p3-fill);color:var(--on-p3);font-weight:800}
+.legend .l1 b{background:var(--p1-fill);color:var(--on-p1)}
+.legend .l2 b{background:var(--p2-fill);color:var(--on-p2)}
+.b-msg{flex:1 1 16em;min-width:0;display:flex;align-items:center;gap:.6em}
+.b-msg .tagm{flex:none;font:700 .7em/1 var(--f-display);letter-spacing:.14em;text-transform:uppercase;background:var(--fg);color:var(--bg);padding:.35em .5em;border-radius:.15em}
+.b-msg .txt{font:600 1.15em/1.2 var(--f-display);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.b-live{display:flex;align-items:center;gap:.45em;font:600 .78em/1 var(--f-display);letter-spacing:.06em;color:var(--muted);white-space:nowrap}
+.dot{width:.65em;height:.65em;border-radius:50%;background:var(--warn);flex:none}
+.dot.ok{background:var(--ok)}
+.dot.bad{background:var(--p1)}
+.b-ctrl{display:flex;gap:.4em;transition:opacity .4s}
+.b-ctrl button{font:600 .75em/1 var(--f-display);letter-spacing:.1em;text-transform:uppercase;background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:.25em;padding:.6em .8em;cursor:pointer;min-height:2.6em}
+.b-ctrl button:hover{color:var(--fg);border-color:var(--muted)}
+.demo-banner{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 5.5rem);z-index:15;display:flex;align-items:center;gap:.8em;background:var(--p2-fill);color:var(--on-p2);font:700 .9rem/1 var(--f-display);letter-spacing:.08em;text-transform:uppercase;padding:.5em .6em .5em .9em;border-radius:.3em;box-shadow:0 6px 20px rgba(0,0,0,.3);white-space:nowrap}
+.demo-banner button{background:var(--on-p2);color:var(--p2-fill);border:0;border-radius:.2em;font:700 .8rem/1 var(--f-display);letter-spacing:.08em;text-transform:uppercase;padding:.55em .7em;cursor:pointer}
+
+@media (min-width:1000px) and (min-aspect-ratio:5/4){
+  .board{height:100%;min-height:0;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;font-size:clamp(13px,1.04vw,48px);overflow:hidden}
+  .board .gut{padding-left:max(16px,1.3em,env(safe-area-inset-left,0px));padding-right:max(16px,1.3em,env(safe-area-inset-right,0px))}
+  .b-head{flex-wrap:nowrap}
+  .b-stats{flex-wrap:nowrap}
+  .b-cols{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1.3em;min-height:0}
+  .p-list{flex:1;min-height:0;overflow:hidden}
+  .p-cols,.row{grid-template-columns:3.4em minmax(0,1fr) 4.4em 5.8em 7.4em 6.6em}
+  .p-cols{display:grid;padding-right:.8em}
+  .p-cols span:nth-child(3),.p-cols span:nth-child(4),.p-cols span:nth-child(6){text-align:right}
+  .p-cols span:nth-child(3){text-align:left}
+  .row{grid-template-areas:"prio unit door when owner path";height:3.7em;min-height:0}
+  .c-unit,.c-when{padding-top:0}
+  .c-door,.c-owner,.c-path{padding-bottom:0}
+  .row .k{display:none}
+  .board.idle{cursor:none}
+  .board.idle .b-ctrl{opacity:0}
+}
+
+/* ───────── SUPERVISOR ───────── */
+.edit{min-height:100%;font-size:16px;display:flex;flex-direction:column}
+.e-top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--head);color:var(--on-head);display:flex;align-items:center;gap:.75rem;padding-block:.65rem;border-bottom:4px solid var(--red)}
+.e-title{min-width:0;flex:1}
+.e-title .a{font:700 1.35rem/1 var(--f-display);text-transform:uppercase;letter-spacing:.03em}
+.e-title .b{font:600 .72rem/1.3 var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--head-muted);display:flex;align-items:center;gap:.4rem;margin-top:.2rem}
+.hbtn{background:var(--head-btn);color:var(--on-head);border:1px solid var(--head-line);border-radius:.4rem;min-height:2.75rem;padding:0 .9rem;font:600 .95rem/1 var(--f-body);cursor:pointer;white-space:nowrap}
+.e-wrap{width:100%;max-width:780px;margin:0 auto;padding-block:1rem 5rem;display:flex;flex-direction:column;gap:1rem}
+.note{background:var(--panel);border:1px solid var(--line);border-radius:.5rem;padding:.8rem 1rem;color:var(--muted);line-height:1.45}
+.e-bar{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
+.tabs{display:flex;gap:.3rem;overflow-x:auto;flex:1 1 auto;min-width:0;padding-bottom:2px}
+.tab{flex:none;background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:2rem;min-height:2.6rem;padding:0 .9rem;font:600 .95rem/1 var(--f-body);cursor:pointer;display:inline-flex;align-items:center;gap:.4rem}
+.tab .n{font:700 .85rem/1 var(--f-display);background:var(--btn);color:var(--btn-fg);border-radius:1rem;padding:.2rem .45rem;font-variant-numeric:tabular-nums}
+.tab[aria-selected="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.tab[aria-selected="true"] .n{background:var(--bg);color:var(--fg)}
+.btn{background:var(--btn);color:var(--btn-fg);border:1px solid var(--line);border-radius:.4rem;min-height:2.75rem;padding:0 1rem;font:600 .95rem/1 var(--f-body);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:.4rem}
+.btn.primary{background:var(--primary);color:var(--on-primary);border-color:transparent}
+.btn.go{background:var(--ok);color:#04150b;border-color:transparent}
+.btn.danger{color:var(--p1);border-color:var(--p1)}
+.btn.danger.armed{background:var(--p1-fill);color:var(--on-p1);border-color:transparent}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.5;cursor:default}
+.e-list{display:flex;flex-direction:column;gap:.6rem}
+.card{display:grid;grid-template-columns:3.4rem minmax(0,1fr);background:var(--panel);border:1px solid var(--line);border-radius:.5rem;overflow:hidden}
+.card.p1{border-color:var(--p1-fill)}
+.card .c-prio .pn{font-size:1.4rem}
+.card .c-prio .pl{font-size:.6rem}
+.card-b{padding:.75rem .85rem;display:flex;flex-direction:column;gap:.55rem;min-width:0}
+.card-top{display:flex;align-items:flex-start;gap:.6rem}
+.card-id{flex:1;min-width:0}
+.card-id .u-main{font-size:1.3rem}
+.card-id .u-sub{font-size:.85rem}
+.meta{display:flex;flex-wrap:wrap;gap:.35rem .9rem;font-size:.92rem;color:var(--muted)}
+.meta b{color:var(--fg);font-weight:600}
+.meta .late{color:var(--p1);font-weight:700}
+.meta .aging{color:var(--warn);font-weight:700}
+.meta .unassigned{font-size:.68rem}
+.card-path{display:flex;align-items:center;gap:.6rem}
+.card-path .lbl{font:700 .78rem/1 var(--f-display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.card-acts{display:flex;flex-wrap:wrap;gap:.5rem}
+.e-empty{border:2px dashed var(--line);border-radius:.5rem;padding:1.2rem;color:var(--muted);line-height:1.45}
+.e-empty strong{display:block;color:var(--fg);font:700 1.15rem/1.2 var(--f-display);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.25rem}
+
+.settings{display:flex;flex-direction:column;gap:1rem}
+.set{background:var(--panel);border:1px solid var(--line);border-radius:.5rem;padding:1rem;display:flex;flex-direction:column;gap:.6rem}
+.set h3{margin:0;font:700 1.05rem/1.2 var(--f-display);text-transform:uppercase;letter-spacing:.08em}
+.set p{margin:0;color:var(--muted);font-size:.9rem;line-height:1.45;max-width:60ch}
+.row-btns{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
+.logo-prev{background:#fff;border-radius:.35rem;padding:.5rem .8rem;display:inline-flex;align-items:center;height:3.5rem;max-width:100%}
+.logo-prev img{height:100%;width:auto;max-width:100%;object-fit:contain}
+
+.fld{display:flex;flex-direction:column;gap:.35rem;min-width:0}
+.fld>label,.fld>.lab{font:600 .78rem/1 var(--f-display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.inp{width:100%;min-height:2.85rem;background:var(--input);color:var(--fg);border:1px solid var(--line);border-radius:.4rem;padding:.55rem .7rem;font-size:16px}
+textarea.inp{min-height:5.5rem;resize:vertical;line-height:1.4}
+.inp:focus{border-color:var(--focus);outline:none;box-shadow:0 0 0 2px var(--focus)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.segm{display:flex;border:1px solid var(--line);border-radius:.45rem;overflow:hidden;background:var(--input)}
+.segm label{flex:1;position:relative;display:flex}
+.segm input{position:absolute;opacity:0;pointer-events:none}
+.segm span{flex:1;display:flex;align-items:center;justify-content:center;min-height:2.75rem;padding:0 .6rem;font:600 .95rem/1 var(--f-body);color:var(--muted);cursor:pointer;text-align:center}
+.segm label+label span{border-left:1px solid var(--line)}
+.segm input:checked+span{background:var(--fg);color:var(--bg)}
+.segm input:focus-visible+span{outline:3px solid var(--focus);outline-offset:-3px}
+.segm.prio input[value="1"]:checked+span{background:var(--p1-fill);color:var(--on-p1)}
+.segm.prio input[value="2"]:checked+span{background:var(--p2-fill);color:var(--on-p2)}
+.segm.prio input[value="3"]:checked+span{background:var(--p3-fill);color:var(--on-p3)}
+
+.sheet{position:fixed;inset:0;z-index:20;background:var(--scrim);display:flex;align-items:flex-end;justify-content:center}
+.sheet-card{width:100%;max-width:640px;max-height:94%;overflow:auto;background:var(--panel);border-radius:.9rem .9rem 0 0;padding:1rem max(16px,env(safe-area-inset-right,0px)) calc(1rem + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:.9rem;animation:up .2s ease-out}
+.sheet-h{display:flex;align-items:center;gap:.6rem}
+.sheet-h h2{margin:0;flex:1;font:700 1.4rem/1 var(--f-display);text-transform:uppercase;letter-spacing:.04em}
+.err{color:var(--p1);font-weight:600;font-size:.92rem}
+.sheet-f{display:flex;flex-wrap:wrap;gap:.5rem;padding-top:.3rem;border-top:1px solid var(--line)}
+.sheet-f .sp{flex:1}
+@media (min-width:700px){.sheet{align-items:center}.sheet-card{border-radius:.9rem}}
+@media (max-width:380px){.grid2{grid-template-columns:1fr}}
+
+.toast{position:fixed;left:50%;bottom:calc(1.2rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;background:var(--toast);color:var(--on-toast);padding:.75rem 1.1rem;border-radius:.45rem;font:600 .95rem/1.3 var(--f-body);box-shadow:0 8px 24px rgba(0,0,0,.3);max-width:calc(100% - 32px);animation:up .18s ease-out}
+/* ───────── SIGN-IN GATE ───────── */
+.gate{min-height:100%;display:flex;align-items:center;justify-content:center;padding-block:2rem;background:var(--bg)}
+.gate-card{width:100%;max-width:420px;background:var(--panel);border:1px solid var(--line);border-radius:.6rem;overflow:hidden;display:flex;flex-direction:column}
+.gate-head{background:var(--plate);padding:1.1rem 1.25rem;border-bottom:4px solid var(--red)}
+.gate-head img{height:2.6rem;width:auto;display:block}
+.gate-body{padding:1.1rem 1.25rem 1.25rem;display:flex;flex-direction:column;gap:.9rem}
+.gate-title{margin:0;font:700 1.6rem/1 var(--f-display);text-transform:uppercase;letter-spacing:.03em}
+.gate-p{margin:0;color:var(--muted);line-height:1.45;font-size:.95rem}
+.gate-p b{color:var(--fg)}
+.gate form{display:flex;flex-direction:column;gap:.8rem}
+.uid{display:flex;gap:.5rem;align-items:center;background:var(--input);border:1px solid var(--line);border-radius:.4rem;padding:.4rem .4rem .4rem .7rem}
+.uid code{flex:1;min-width:0;overflow-wrap:anywhere;font-size:.85rem;user-select:all}
+.gate-alt{border-top:1px solid var(--line);padding-top:.8rem}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.people{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:.45rem;overflow:hidden}
+.person{display:flex;align-items:center;gap:.6rem;padding:.6rem .75rem;border-top:1px solid var(--line);flex-wrap:wrap}
+.person:first-child{border-top:0}
+.person .who{flex:1;min-width:10rem}
+.person .who b{display:block;font-weight:600}
+.person .who span{font-size:.8rem;color:var(--muted);overflow-wrap:anywhere}
+.role-chip{font:700 .7rem/1 var(--f-display);letter-spacing:.12em;text-transform:uppercase;padding:.35rem .5rem;border-radius:.2rem;background:var(--btn);color:var(--btn-fg)}
+.role-chip.admin{background:var(--fg);color:var(--bg)}
+.person .btn{min-height:2.4rem;padding:0 .75rem;font-size:.85rem}
+@keyframes up{from{transform:translate(var(--tx,0),12px);opacity:.4}to{transform:translate(var(--tx,0),0);opacity:1}}
+.toast{--tx:-50%}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<noscript><p style="padding:1rem">This board needs JavaScript turned on.</p></noscript>
+<div id="app">
+  <!-- SIGN-IN GATE -->
+  <section id="gate" class="gate gut" aria-label="Sign in" hidden>
+    <div class="gate-card">
+      <div class="gate-head"><img src="../assets/ceva-logo.svg" alt="CEVA Logistics"></div>
+      <div class="gate-body">
+        <h1 class="gate-title">Receiving Dock</h1>
+        <p class="gate-p" id="gateWait">Connecting…</p>
+        <p class="gate-p" id="gateSetup" hidden>This board isn’t connected to its database yet. Add the Firebase web config to <code>dock-board/firebase-config.js</code> in the repository.</p>
+        <form id="gateLogin" novalidate hidden>
+          <p class="gate-p">Sign in with the account your board admin set up. TVs sign in once and stay signed in.</p>
+          <div class="fld"><label for="lEmail">Email</label><input class="inp" id="lEmail" type="email" autocomplete="username" inputmode="email"></div>
+          <div class="fld"><label for="lPass">Password</label><input class="inp" id="lPass" type="password" autocomplete="current-password"></div>
+          <div class="err" id="lErr" role="alert" hidden></div>
+          <button class="btn primary" type="submit" id="lGo">Sign in</button>
+        </form>
+        <div id="gateDenied" hidden>
+          <p class="gate-p">Signed in as <b id="dEmail"></b>, but this account hasn’t been added to the board. Send your board admin this user ID:</p>
+          <div class="uid" style="margin-top:.7rem"><code id="dUid"></code><button type="button" class="btn" id="dCopy">Copy</button></div>
+          <div class="row-btns" style="margin-top:.7rem"><button type="button" class="btn ghost" id="dOut">Sign out</button></div>
+        </div>
+        <div class="gate-alt"><button type="button" class="btn ghost" id="gDemo">Preview with example rows</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TV BOARD -->
+  <section id="board" class="board" aria-label="Receiving dock board" hidden>
+    <header class="b-head gut">
+      <div class="b-brand">
+        <div class="logo-plate" id="logoPlate" hidden><img id="logoImg" alt="Company logo"></div>
+        <div>
+          <div class="b-eyebrow" id="siteName">CEVA Logistics</div>
+          <h1 class="b-title">Receiving Dock</h1>
+        </div>
+      </div>
+      <dl class="b-stats">
+        <div><dt>In drop</dt><dd id="stDrop">0</dd></div>
+        <div><dt>Still due</dt><dd id="stDue">0</dd></div>
+        <div id="tileLate"><dt>Late</dt><dd id="stLate">0</dd></div>
+        <div id="tileP1"><dt>P1 open</dt><dd id="stP1">0</dd></div>
+        <div><dt>Received today</dt><dd id="stRecv">0</dd></div>
+      </dl>
+      <div class="b-clock"><div class="t" id="clkTime">--:--</div><div class="d" id="clkDate"></div></div>
+    </header>
+    <div class="b-rule"></div>
+    <main class="b-cols gut">
+      <section class="b-panel" aria-labelledby="hDrop">
+        <header class="p-head"><h2 id="hDrop">In the drop</h2><span class="p-count" id="cntDrop"></span><span class="p-page" id="pgDrop"></span></header>
+        <div class="p-cols" aria-hidden="true"><span>Pri</span><span>Trailer · Carrier</span><span>Door</span><span>In drop</span><span>Pathway owner</span><span>Status</span></div>
+        <div class="p-list" id="listDrop" role="list"></div>
+      </section>
+      <section class="b-panel" aria-labelledby="hAppt">
+        <header class="p-head"><h2 id="hAppt">Today's appointments</h2><span class="p-count" id="cntAppt"></span><span class="p-page" id="pgAppt"></span></header>
+        <div class="p-cols" aria-hidden="true"><span>Pri</span><span>Carrier · Trailer</span><span>Door</span><span>Appt</span><span>Pathway owner</span><span>Status</span></div>
+        <div class="p-list" id="listAppt" role="list"></div>
+      </section>
+    </main>
+    <footer class="b-foot gut">
+      <div class="legend" aria-label="Priority levels"><span class="l1"><b>P1</b>Critical</span><span class="l2"><b>P2</b>High</span><span class="l3"><b>P3</b>Standard</span></div>
+      <div class="b-msg" id="boardMsg" hidden><span class="tagm">Notice</span><span class="txt" id="boardMsgTxt"></span></div>
+      <div class="b-live"><span class="dot" id="liveDot"></span><span id="liveTxt">Connecting…</span></div>
+      <div class="b-ctrl"><button type="button" id="btnFull">Full screen</button><button type="button" id="btnToEdit">Update board</button></div>
+    </footer>
+    <div class="demo-banner" id="demoBanner" hidden>Example rows · not live <button type="button" id="btnExitDemo">Exit preview</button></div>
+  </section>
+
+  <!-- SUPERVISOR -->
+  <section id="edit" class="edit" aria-label="Update the dock board" hidden>
+    <header class="e-top gut">
+      <div class="e-title"><div class="a">Receiving Dock</div><div class="b"><span class="dot" id="eDot"></span><span id="eLive">Connecting…</span></div></div>
+      <button type="button" class="hbtn" id="btnToBoard">View board</button>
+    </header>
+    <div class="e-wrap gut">
+      <div class="note" id="eAccess" hidden></div>
+      <div class="e-bar">
+        <div class="tabs" role="tablist" aria-label="Board sections">
+          <button type="button" class="tab" role="tab" data-tab="drop" id="tab-drop">In drop <span class="n" id="nDrop">0</span></button>
+          <button type="button" class="tab" role="tab" data-tab="today" id="tab-today">Today <span class="n" id="nToday">0</span></button>
+          <button type="button" class="tab" role="tab" data-tab="upcoming" id="tab-upcoming">Upcoming <span class="n" id="nUp">0</span></button>
+          <button type="button" class="tab" role="tab" data-tab="received" id="tab-received">Received <span class="n" id="nRecv">0</span></button>
+          <button type="button" class="tab" role="tab" data-tab="settings" id="tab-settings">Settings</button>
+        </div>
+        <button type="button" class="btn primary" id="btnAdd">Add truck</button>
+      </div>
+      <div class="e-list" id="eList" role="tabpanel"></div>
+
+      <div class="settings" id="setPanel" role="tabpanel" hidden>
+        <div class="set" id="setAccount">
+          <h3>Account</h3>
+          <p id="acctLine"></p>
+          <div class="row-btns"><button type="button" class="btn ghost" id="acctOut">Sign out</button></div>
+        </div>
+        <div class="set" id="setPeople" hidden>
+          <h3>People</h3>
+          <p>Create each login in the Firebase console under Authentication → Users → Add user, then paste its User UID here. Viewer is for TVs, Supervisor updates trucks, Admin also manages people and branding.</p>
+          <div class="people" id="peopleList"></div>
+          <div class="grid2">
+            <div class="fld"><label for="pUid">User UID</label><input class="inp" id="pUid" maxlength="128" autocomplete="off" spellcheck="false"></div>
+            <div class="fld"><label for="pName">Name</label><input class="inp" id="pName" maxlength="40" autocomplete="off" placeholder="Dock TV 1"></div>
+          </div>
+          <div class="fld"><span class="lab" id="lblRole">Role</span>
+            <div class="segm" role="radiogroup" aria-labelledby="lblRole">
+              <label><input type="radio" name="pRole" id="pRoleV" value="viewer" checked><span>Viewer (TV)</span></label>
+              <label><input type="radio" name="pRole" id="pRoleS" value="supervisor"><span>Supervisor</span></label>
+              <label><input type="radio" name="pRole" id="pRoleA" value="admin"><span>Admin</span></label>
+            </div>
+          </div>
+          <div class="err" id="pErr" role="alert" hidden></div>
+          <div class="row-btns"><button type="button" class="btn primary" id="pSave">Add or update person</button></div>
+        </div>
+        <div class="set">
+          <h3>Board notice</h3>
+          <p>Shows along the bottom of the TV. Keep it to one line: a door out of service, a shift change, a hot customer.</p>
+          <textarea class="inp" id="sMsg" maxlength="160" placeholder="Door 7 leveler down. Use D8 for live unloads."></textarea>
+          <div class="row-btns"><button type="button" class="btn primary" id="sMsgSave">Save notice</button><button type="button" class="btn ghost" id="sMsgClear">Clear notice</button></div>
+        </div>
+        <div class="set">
+          <h3>Pathway owners</h3>
+          <p>One name per line. These show as suggestions when you assign a truck.</p>
+          <textarea class="inp" id="sRoster" placeholder="A. Ortiz&#10;K. Bell"></textarea>
+          <div class="row-btns"><button type="button" class="btn primary" id="sRosterSave">Save names</button></div>
+        </div>
+        <div class="set">
+          <h3>Clock</h3>
+          <div class="segm" role="radiogroup" aria-label="Clock format">
+            <label><input type="radio" name="sClock" id="sClock12" value="12"><span>12-hour</span></label>
+            <label><input type="radio" name="sClock" id="sClock24" value="24"><span>24-hour</span></label>
+          </div>
+        </div>
+        <div class="set" id="setAdmin" hidden>
+          <h3>Branding</h3>
+          <p>Only admins see this section. The logo comes from <code>assets/ceva-logo.svg</code> in the repository.</p>
+          <div class="fld"><label for="sSite">Site name (above the board title)</label><input class="inp" id="sSite" maxlength="60" placeholder="Atlanta Receiving"></div>
+          <div class="row-btns"><button type="button" class="btn primary" id="sSiteSave">Save site name</button></div>
+          <div class="fld"><span class="lab">Board colors on the TV</span>
+            <div class="segm" role="radiogroup" aria-label="Board colors">
+              <label><input type="radio" name="sTheme" id="sThemeDark" value="dark"><span>Dark (best on TVs)</span></label>
+              <label><input type="radio" name="sTheme" id="sThemeScreen" value="screen"><span>Match screen</span></label>
+            </div>
+          </div>
+        </div>
+        <div class="set">
+          <h3>Preview</h3>
+          <p>See the TV layout filled with example rows. Nothing is saved and the live board is unchanged.</p>
+          <div class="row-btns"><button type="button" class="btn" id="sDemo">Preview board with example rows</button></div>
+        </div>
+        <div class="set" id="setClear">
+          <h3>Received trucks</h3>
+          <p>Received trucks drop off the TV automatically. Clear them here at end of week to keep the list short.</p>
+          <div class="row-btns"><button type="button" class="btn danger" id="sClear">Clear received trucks</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sheet" id="sheet" hidden>
+      <form class="sheet-card" id="sheetForm" novalidate aria-labelledby="sheetTitle">
+        <div class="sheet-h"><h2 id="sheetTitle">Add truck</h2><button type="button" class="btn ghost" id="fClose">Close</button></div>
+        <div class="fld"><span class="lab" id="lblKind">Type</span>
+          <div class="segm" role="radiogroup" aria-labelledby="lblKind">
+            <label><input type="radio" name="fKind" id="fKindDrop" value="drop"><span>Drop trailer</span></label>
+            <label><input type="radio" name="fKind" id="fKindAppt" value="appt"><span>Appointment</span></label>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="fld"><label for="fCarrier">Carrier</label><input class="inp" id="fCarrier" maxlength="40" autocomplete="off"></div>
+          <div class="fld"><label for="fTrailer">Trailer #</label><input class="inp" id="fTrailer" maxlength="24" autocomplete="off"></div>
+        </div>
+        <div class="grid2">
+          <div class="fld"><label for="fRef">PO / ASN / BOL</label><input class="inp" id="fRef" maxlength="60" autocomplete="off"></div>
+          <div class="fld"><label for="fDoor">Door or yard spot</label><input class="inp" id="fDoor" maxlength="12" autocomplete="off" placeholder="D14 or Y-07"></div>
+        </div>
+        <div class="grid2">
+          <div class="fld"><label for="fDate" id="lblDate">Dropped on</label><input class="inp" type="date" id="fDate"></div>
+          <div class="fld"><label for="fTime" id="lblTime">Dropped at</label><input class="inp" type="time" id="fTime"></div>
+        </div>
+        <div class="fld"><span class="lab" id="lblPrio">Priority</span>
+          <div class="segm prio" role="radiogroup" aria-labelledby="lblPrio">
+            <label><input type="radio" name="fPrio" id="fPrio1" value="1"><span>P1 Critical</span></label>
+            <label><input type="radio" name="fPrio" id="fPrio2" value="2"><span>P2 High</span></label>
+            <label><input type="radio" name="fPrio" id="fPrio3" value="3"><span>P3 Standard</span></label>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="fld"><label for="fOwner">Pathway owner</label><input class="inp" id="fOwner" maxlength="40" list="rosterList" autocomplete="off" placeholder="Who completes it"></div>
+          <div class="fld"><label for="fStatus">Status</label><select class="inp" id="fStatus"></select></div>
+        </div>
+        <datalist id="rosterList"></datalist>
+        <div class="fld"><label for="fNotes">Note on the board (optional)</label><input class="inp" id="fNotes" maxlength="140" autocomplete="off" placeholder="Temp-controlled, hold for QA"></div>
+        <div class="err" id="fErr" role="alert" hidden></div>
+        <div class="sheet-f">
+          <button type="button" class="btn danger" id="fDelete" hidden>Delete</button>
+          <span class="sp"></span>
+          <button type="button" class="btn ghost" id="fCancel">Cancel</button>
+          <button type="submit" class="btn primary" id="fSave">Save</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <div class="toast" id="toast" role="status" hidden></div>
+</div>
+
+<script src="firebase-config.js"></script>
+<script type="module">
+(function(){
+'use strict';
+const FB = 'https://www.gstatic.com/firebasejs/10.14.1/';
+const LOGO = '../assets/ceva-logo.svg';
+const ROLE_LABEL = {viewer:'Viewer', supervisor:'Supervisor', admin:'Admin'};
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2,'0');
+const ymd = d => d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+const hm = d => pad(d.getHours()) + ':' + pad(d.getMinutes());
+const todayStr = () => ymd(new Date());
+const str = (v, n) => typeof v === 'string' ? v.trim().slice(0, n || 200) : '';
+const FIT = window.matchMedia('(min-width:1000px) and (min-aspect-ratio:5/4)');
+const PRI = {1:{n:'P1',l:'Critical'},2:{n:'P2',l:'High'},3:{n:'P3',l:'Standard'}};
+const STEP = {scheduled:0, arrived:1, door:2, unloading:3, received:4};
+const ST_OPTS = {
+  drop:[['arrived','Waiting for door'],['door','At door'],['unloading','Unloading'],['received','Received']],
+  appt:[['scheduled','Scheduled (not here yet)'],['arrived','On site'],['door','At door'],['unloading','Unloading'],['received','Received']]
+};
+const LATE_GRACE = 15*60e3, AGING = 24*3600e3;
+
+const S = {
+  view:'board', demo:false, demoLoads:[], tab:'drop',
+  loads:[], settings:{}, brand:{},
+  db:null, fb:null, authUser:null, role:null, ready:false, gate:'wait', people:[], unsubs:[], roleUnsub:null,
+  conn:'connecting', canWrite:null, canAdmin:false, writeDenied:false,
+  page:{drop:0, appt:0}, editing:null, busy:new Set()
+};
+
+/* ---------- time helpers ---------- */
+function tOf(l){
+  if(!l.date) return 0;
+  const [y,m,d] = l.date.split('-').map(Number);
+  const [hh,mm] = (l.time || '00:00').split(':').map(Number);
+  const t = new Date(y, m-1, d, hh||0, mm||0).getTime();
+  return isNaN(t) ? 0 : t;
+}
+const is24 = () => S.settings.clock === '24';
+function timeParts(hhmm){
+  if(!hhmm) return {t:'—', s:''};
+  if(is24()) return {t:hhmm, s:''};
+  const [h,m] = hhmm.split(':').map(Number);
+  return {t:(h%12||12) + ':' + pad(m), s:h<12 ? 'AM' : 'PM'};
+}
+const fmtTime = hhmm => { const p = timeParts(hhmm); return p.s ? p.t + ' ' + p.s : p.t; };
+const fmtTimeHTML = hhmm => { const p = timeParts(hhmm); return esc(p.t) + (p.s ? '<small>' + p.s + '</small>' : ''); };
+function fmtAge(ms){
+  const m = Math.max(0, Math.floor(ms/60000));
+  if(m < 60) return m + 'm';
+  const h = Math.floor(m/60);
+  if(h < 24) return h + 'h ' + pad(m%60) + 'm';
+  return Math.floor(h/24) + 'd ' + (h%24) + 'h';
+}
+function fmtShortDate(s){
+  if(!s) return '';
+  const [y,m,d] = s.split('-').map(Number);
+  return new Date(y, m-1, d).toLocaleDateString(undefined, {month:'short', day:'numeric'});
+}
+const sameDay = (ms, ref) => ms && ymd(new Date(ms)) === ymd(new Date(ref));
+const isLate = (l, now) => l.kind === 'appt' && l.status === 'scheduled' && now > tOf(l) + LATE_GRACE;
+
+function statusLabel(l){
+  switch(l.status){
+    case 'scheduled': return 'Scheduled';
+    case 'arrived': return l.kind === 'drop' ? 'Waiting' : 'On site';
+    case 'door': return 'At door';
+    case 'unloading': return 'Unloading';
+    case 'received': return 'Received';
+  }
+  return '';
+}
+
+/* ---------- data shaping ---------- */
+function norm(id, d){
+  d = d || {};
+  const kind = d.kind === 'appt' ? 'appt' : 'drop';
+  let status = Object.prototype.hasOwnProperty.call(STEP, d.status) ? d.status : (kind === 'appt' ? 'scheduled' : 'arrived');
+  if(kind === 'drop' && status === 'scheduled') status = 'arrived';
+  const p = Number(d.priority);
+  return {
+    id, kind, status,
+    trailer:str(d.trailer,24), carrier:str(d.carrier,40), ref:str(d.ref,60), door:str(d.door,12),
+    owner:str(d.owner,40), notes:str(d.notes,140),
+    date:/^\d{4}-\d{2}-\d{2}$/.test(d.date) ? d.date : todayStr(),
+    time:/^\d{2}:\d{2}$/.test(d.time) ? d.time : '',
+    priority:[1,2,3].includes(p) ? p : 3,
+    receivedAt:typeof d.receivedAt === 'number' ? d.receivedAt : null,
+    updatedAt:typeof d.updatedAt === 'number' ? d.updatedAt : 0
+  };
+}
+function derive(list){
+  const now = Date.now(), today = todayStr();
+  const open = list.filter(l => l.status !== 'received');
+  const drop = open.filter(l => l.kind === 'drop').sort((a,b) => a.priority - b.priority || tOf(a) - tOf(b));
+  const appt = open.filter(l => l.kind === 'appt' && l.date <= today).sort((a,b) => tOf(a) - tOf(b) || a.priority - b.priority);
+  const upcoming = open.filter(l => l.kind === 'appt' && l.date > today).sort((a,b) => tOf(a) - tOf(b));
+  const received = list.filter(l => l.status === 'received').sort((a,b) => (b.receivedAt||0) - (a.receivedAt||0));
+  return {
+    now, today, drop, appt, upcoming, received,
+    receivedToday: received.filter(l => sameDay(l.receivedAt, now)),
+    late: appt.filter(l => isLate(l, now)),
+    due: appt.filter(l => l.status === 'scheduled'),
+    p1: drop.concat(appt).filter(l => l.priority === 1)
+  };
+}
+const boardLoads = () => S.demo ? S.demoLoads : S.loads;
+
+/* ---------- shared bits ---------- */
+function prioCell(l){
+  const p = PRI[l.priority];
+  return '<div class="c-prio"><span class="pn">' + p.n + '</span><span class="pl">' + p.l + '</span></div>';
+}
+function track(l){
+  const st = STEP[l.status] || 0;
+  let h = '<span class="trk" aria-hidden="true">';
+  for(let i = 1; i <= 3; i++) h += '<i class="' + (st >= i ? 'on' : '') + (st === i ? ' cur' : '') + '"></i>';
+  return h + '</span>';
+}
+function unitParts(l){
+  let a, b;
+  if(l.kind === 'drop'){ a = l.trailer || l.carrier || l.ref; b = l.trailer ? l.carrier : ''; }
+  else { a = l.carrier || l.trailer || l.ref; b = l.carrier ? l.trailer : ''; }
+  const sub = [l.ref && l.ref !== a ? l.ref : '', l.notes].filter(Boolean).join(' · ');
+  return {a: a || 'Unnamed', b, sub};
+}
+const logoSrc = () => LOGO;
+function setConn(dotEl, txtEl, short){
+  let cls = '', txt = '';
+  if(S.demo && S.view === 'demo'){ cls = ''; txt = 'Example rows'; }
+  else if(S.conn === 'live'){
+    cls = 'ok';
+    const last = S.loads.reduce((m,l) => Math.max(m, l.updatedAt||0), 0);
+    txt = last ? 'Live · last change ' + fmtTime(hm(new Date(last))) + (sameDay(last, Date.now()) ? '' : ' ' + fmtShortDate(ymd(new Date(last)))) : 'Live';
+  }
+  else if(S.conn === 'offline'){ cls = ''; txt = short ? 'Offline' : 'Offline · showing the last saved board'; }
+  else if(S.conn === 'none'){ cls = 'bad'; txt = short ? 'Not connected' : 'Not connected to the board database.'; }
+  else if(S.conn === 'error'){ cls = 'bad'; txt = short ? 'Connection lost' : 'Connection lost. Reload this page.'; }
+  else { txt = 'Connecting…'; }
+  dotEl.className = 'dot ' + cls; txtEl.textContent = txt;
+}
+
+/* ---------- BOARD ---------- */
+function boardRow(l, D){
+  const u = unitParts(l), now = D.now;
+  let when, sub = '', wc = '';
+  if(l.kind === 'drop'){
+    const age = now - tOf(l);
+    when = esc(fmtAge(age));
+    sub = 'since ' + esc(l.date === D.today ? fmtTime(l.time) : fmtShortDate(l.date));
+    if(age > AGING) wc = ' aging';
+  } else {
+    when = fmtTimeHTML(l.time);
+    if(isLate(l, now)){ wc = ' late'; sub = '<span class="tag-late">Late ' + esc(fmtAge(now - tOf(l))) + '</span>'; }
+    else if(l.date !== D.today) sub = esc(fmtShortDate(l.date));
+  }
+  const st = STEP[l.status] || 0;
+  return '<div class="row p' + l.priority + '" role="listitem">' +
+    prioCell(l) +
+    '<div class="c-unit"><div class="u-main">' + esc(u.a) + (u.b ? '<span class="b">' + esc(u.b) + '</span>' : '') + '</div>' +
+      (u.sub ? '<div class="u-sub">' + esc(u.sub) + '</div>' : '') + '</div>' +
+    '<div class="c-door"><span class="k">Door</span><span class="v">' + (l.door ? esc(l.door) : '—') + '</span></div>' +
+    '<div class="c-when' + wc + '"><div class="v">' + when + '</div>' + (sub ? '<div class="s">' + sub + '</div>' : '') + '</div>' +
+    '<div class="c-owner">' + (l.owner ? esc(l.owner) : '<span class="unassigned">Unassigned</span>') + '</div>' +
+    '<div class="c-path' + (st >= 3 ? ' go' : '') + '">' + track(l) + '<span class="lbl">' + statusLabel(l) + '</span></div>' +
+  '</div>';
+}
+function boardEmpty(key){
+  if(S.conn === 'none' && !S.demo) return '<div class="empty"><strong>Not connected</strong><span>This screen needs to be signed in to claude.ai with access to this board.</span></div>';
+  return key === 'drop'
+    ? '<div class="empty"><strong>No trailers in the drop</strong><span>Dropped trailers show here once a supervisor adds them.</span></div>'
+    : '<div class="empty"><strong>No more appointments today</strong><span>Scheduled trucks for today show here in time order.</span></div>';
+}
+function renderPanel(key, items, D){
+  const list = $(key === 'drop' ? '#listDrop' : '#listAppt');
+  const cnt = $(key === 'drop' ? '#cntDrop' : '#cntAppt');
+  const pg = $(key === 'drop' ? '#pgDrop' : '#pgAppt');
+  cnt.textContent = items.length ? String(items.length) : '';
+  if(!items.length){ list.innerHTML = boardEmpty(key); pg.textContent = ''; return; }
+  let slice = items, pages = 1;
+  if(FIT.matches){
+    list.innerHTML = '';
+    const fs = parseFloat(getComputedStyle(list).fontSize) || 16;
+    const rowH = 3.7*fs, gap = .35*fs, avail = list.clientHeight - .5*fs;
+    const cap = Math.max(1, Math.floor((avail + gap) / (rowH + gap)));
+    pages = Math.ceil(items.length / cap);
+    const page = S.page[key] % pages; S.page[key] = page;
+    slice = items.slice(page*cap, page*cap + cap);
+  }
+  list.innerHTML = slice.map(l => boardRow(l, D)).join('');
+  pg.textContent = pages > 1 ? 'Page ' + (S.page[key] + 1) + ' of ' + pages : '';
+}
+function renderBoard(){
+  const D = derive(boardLoads());
+  const src = logoSrc();
+  const eb = $('#siteName');
+  eb.textContent = str(S.brand.siteName, 60) || (src ? '' : 'CEVA Logistics');
+  eb.hidden = !eb.textContent;
+  const plate = $('#logoPlate'), img = $('#logoImg');
+  if(src){ if(img.getAttribute('src') !== src) img.src = src; plate.hidden = false; } else plate.hidden = true;
+  $('#stDrop').textContent = D.drop.length;
+  $('#stDue').textContent = D.due.length;
+  $('#stLate').textContent = D.late.length;
+  $('#stP1').textContent = D.p1.length;
+  $('#stRecv').textContent = D.receivedToday.length;
+  $('#tileLate').className = D.late.length ? 'warn' : '';
+  $('#tileP1').className = D.p1.length ? 'hot' : '';
+  const msg = str(S.settings.message, 160);
+  $('#boardMsg').hidden = !msg; $('#boardMsgTxt').textContent = msg;
+  setConn($('#liveDot'), $('#liveTxt'));
+  $('#demoBanner').hidden = !S.demo;
+  renderPanel('drop', D.drop, D);
+  renderPanel('appt', D.appt, D);
+  tickClock();
+}
+function tickClock(){
+  const d = new Date(), p = timeParts(hm(d));
+  $('#clkTime').innerHTML = esc(p.t) + (p.s ? '<small>' + p.s + '</small>' : '');
+  $('#clkDate').textContent = d.toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'});
+}
+
+/* ---------- SUPERVISOR ---------- */
+const readOnly = () => S.canWrite === false || S.writeDenied;
+function actions(l){
+  if(readOnly()) return '';
+  const b = (act, label, cls) => '<button type="button" class="btn ' + (cls||'') + '" data-act="' + act + '" data-id="' + esc(l.id) + '"' + (S.busy.has(l.id) ? ' disabled' : '') + '>' + label + '</button>';
+  switch(l.status){
+    case 'scheduled': return b('arrive','Arrived, live unload','primary') + b('dropin','Dropped in yard');
+    case 'arrived': return b('door','At door','primary');
+    case 'door': return b('unload','Start unload','primary');
+    case 'unloading': return b('receive','Mark received','go');
+    case 'received': return b('reopen','Undo received','ghost');
+  }
+  return '';
+}
+function card(l, D){
+  const u = unitParts(l), now = D.now;
+  const meta = [];
+  meta.push('<span>Door <b>' + (l.door ? esc(l.door) : '—') + '</b></span>');
+  if(l.status === 'received'){
+    meta.push('<span>Received <b>' + esc(l.receivedAt ? fmtTime(hm(new Date(l.receivedAt))) : '') + (l.receivedAt && !sameDay(l.receivedAt, now) ? ' ' + esc(fmtShortDate(ymd(new Date(l.receivedAt)))) : '') + '</b></span>');
+  } else if(l.kind === 'drop'){
+    const age = now - tOf(l);
+    meta.push('<span class="' + (age > AGING ? 'aging' : '') + '">In drop <b>' + esc(fmtAge(age)) + '</b></span>');
+  } else {
+    meta.push('<span>Appt <b>' + (l.date !== D.today ? esc(fmtShortDate(l.date)) + ' ' : '') + esc(fmtTime(l.time)) + '</b></span>');
+    if(isLate(l, now)) meta.push('<span class="late">Late ' + esc(fmtAge(now - tOf(l))) + '</span>');
+  }
+  meta.push(l.owner ? '<span>Owner <b>' + esc(l.owner) + '</b></span>' : '<span class="unassigned">Unassigned</span>');
+  return '<article class="card p' + l.priority + '">' + prioCell(l) +
+    '<div class="card-b">' +
+      '<div class="card-top"><div class="card-id"><div class="u-main">' + esc(u.a) + (u.b ? '<span class="b">' + esc(u.b) + '</span>' : '') + '</div>' +
+        (u.sub ? '<div class="u-sub">' + esc(u.sub) + '</div>' : '') + '</div>' +
+        (readOnly() ? '' : '<button type="button" class="btn ghost" data-edit="' + esc(l.id) + '">Edit</button>') + '</div>' +
+      '<div class="meta">' + meta.join('') + '</div>' +
+      '<div class="card-path">' + track(l) + '<span class="lbl">' + (l.kind === 'drop' ? 'Drop · ' : 'Appt · ') + statusLabel(l) + '</span></div>' +
+      (actions(l) ? '<div class="card-acts">' + actions(l) + '</div>' : '') +
+    '</div></article>';
+}
+const EMPTY = {
+  drop:['No trailers in the drop','When a trailer is dropped, tap Add truck and pick Drop trailer.'],
+  today:['Nothing scheduled today','Add today’s appointments with Add truck. They show on the TV in time order.'],
+  upcoming:['No future appointments','Appointments dated after today wait here and move to the board on their day.'],
+  received:['Nothing received yet','Trucks marked received show here and drop off the TV.']
+};
+function renderEdit(){
+  const D = derive(S.loads);
+  setConn($('#eDot'), $('#eLive'), true);
+  $('#nDrop').textContent = D.drop.length;
+  $('#nToday').textContent = D.appt.length;
+  $('#nUp').textContent = D.upcoming.length;
+  $('#nRecv').textContent = D.received.length;
+  document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.tab === S.tab)));
+  const acc = $('#eAccess');
+  if(S.conn === 'none'){ acc.hidden = false; acc.textContent = 'Not connected to the board database. Reload the page.'; }
+  else if(readOnly()){ acc.hidden = false; acc.textContent = 'This account is a Viewer, so it can show the board but not change it. Ask the board admin to make it a Supervisor.'; }
+  else if(S.conn === 'offline'){ acc.hidden = false; acc.textContent = 'Offline. Changes you make now save on this phone and sync when the network is back.'; }
+  else acc.hidden = true;
+  $('#btnAdd').hidden = readOnly() || S.conn === 'none';
+  const isSet = S.tab === 'settings';
+  $('#setPanel').hidden = !isSet; $('#eList').hidden = isSet;
+  if(isSet){ fillSettings(false); return; }
+  const items = S.tab === 'drop' ? D.drop : S.tab === 'today' ? D.appt : S.tab === 'upcoming' ? D.upcoming : D.received;
+  const el = $('#eList');
+  el.setAttribute('aria-labelledby', 'tab-' + S.tab);
+  if(!items.length){ const e = EMPTY[S.tab]; el.innerHTML = '<div class="e-empty"><strong>' + e[0] + '</strong>' + e[1] + '</div>'; return; }
+  el.innerHTML = items.map(l => card(l, D)).join('');
+}
+
+/* ---------- settings panel ---------- */
+function setVal(el, v, force){ if(force || (document.activeElement !== el && !el.dataset.dirty)) el.value = v; }
+function fillSettings(force){
+  setVal($('#sMsg'), str(S.settings.message, 160), force);
+  setVal($('#sRoster'), (Array.isArray(S.settings.roster) ? S.settings.roster : []).join('\n'), force);
+  (is24() ? $('#sClock24') : $('#sClock12')).checked = true;
+  const admin = S.canAdmin && S.conn !== 'none';
+  $('#setAdmin').hidden = !admin;
+  $('#setClear').hidden = readOnly() || S.conn === 'none';
+  $('#setPeople').hidden = !admin;
+  if(admin){
+    setVal($('#sSite'), str(S.brand.siteName, 60), force);
+    (S.brand.boardTheme === 'screen' ? $('#sThemeScreen') : $('#sThemeDark')).checked = true;
+    renderPeople();
+  }
+  $('#acctLine').textContent = S.authUser ? 'Signed in as ' + (S.authUser.email || 'this device') + ' · ' + (ROLE_LABEL[S.role] || 'no role') : '';
+  const clr = $('#sClear');
+  if(!clr.dataset.armed) clr.textContent = 'Clear received trucks (' + S.loads.filter(l => l.status === 'received').length + ')';
+  document.querySelectorAll('#setPanel input,#setPanel textarea,#setPanel button').forEach(x => { if(x.id !== 'sDemo' && x.id !== 'acctOut') x.disabled = readOnly() || S.conn === 'none'; });
+}
+['sMsg','sRoster','sSite'].forEach(id => $('#' + id).addEventListener('input', e => { e.target.dataset.dirty = '1'; }));
+
+/* ---------- people (admin) ---------- */
+function renderPeople(){
+  const el = $('#peopleList');
+  const me = S.authUser && S.authUser.uid;
+  if(!S.people.length){ el.innerHTML = '<div class="person"><div class="who"><span>Nobody added yet.</span></div></div>'; return; }
+  const order = {admin:0, supervisor:1, viewer:2};
+  const rank = p => (p.role in order) ? order[p.role] : 3;
+  el.innerHTML = S.people.slice().sort((a,b) => rank(a) - rank(b) || String(a.name||'').localeCompare(String(b.name||''))).map(p =>
+    '<div class="person"><div class="who"><b>' + esc(str(p.name,40) || 'Unnamed') + (p.id === me ? ' (you)' : '') + '</b><span>' + esc(p.id) + '</span></div>' +
+    '<span class="role-chip' + (p.role === 'admin' ? ' admin' : '') + '">' + esc(ROLE_LABEL[p.role] || 'No role') + '</span>' +
+    '<button type="button" class="btn ghost" data-pedit="' + esc(p.id) + '">Edit</button>' +
+    (p.id === me ? '' : '<button type="button" class="btn danger" data-pdel="' + esc(p.id) + '">Remove</button>') +
+    '</div>').join('');
+}
+function peopleErr(t){ const e = $('#pErr'); e.textContent = t || ''; e.hidden = !t; }
+$('#pSave').addEventListener('click', () => {
+  const uid = $('#pUid').value.trim(), name = str($('#pName').value, 40);
+  const role = document.querySelector('input[name="pRole"]:checked').value;
+  if(!/^[A-Za-z0-9_-]{6,128}$/.test(uid)) return peopleErr('Paste the User UID from Firebase: Authentication → Users, UID column.');
+  if(S.authUser && uid === S.authUser.uid && role !== 'admin') return peopleErr('You can’t remove your own admin access. Ask another admin to change it.');
+  peopleErr('');
+  if(commit(S.db.doc('roles/' + uid).set({role, name, updatedAt:Date.now()}))){
+    $('#pUid').value = ''; $('#pName').value = ''; $('#pRoleV').checked = true;
+    toast((name || 'Person') + ' saved as ' + ROLE_LABEL[role]);
+  }
+});
+
+/* ---------- writes ---------- */
+/* Writes apply on this device at once and sync when the network allows, so nobody waits on warehouse Wi-Fi.
+   A write the server refuses rolls back on its own and shows a message. */
+function writeErr(e){
+  const code = e && e.code;
+  if(code === 'permission-denied') return 'Your account can’t make that change. Ask the board admin to set you up as a Supervisor.';
+  if(code === 'resource-exhausted') return 'The board hit its daily free limit. Changes work again tomorrow.';
+  return 'Couldn’t save. Check the connection and try again.';
+}
+function commit(p){ if(p && typeof p.catch === 'function') p.catch(e => toast(writeErr(e))); return true; }
+function patchLoad(id, data){
+  if(!S.db){ toast('Not connected.'); return false; }
+  return commit(S.db.collection('loads').doc(id).update(Object.assign({}, data, {updatedAt:Date.now()})));
+}
+function saveSettings(patch){
+  if(!S.db) return false;
+  return commit(S.db.doc('board/settings').set(Object.assign({}, S.settings, patch, {updatedAt:Date.now()})));
+}
+function saveBrand(patch){
+  if(!S.db) return false;
+  return commit(S.db.doc('admin/brand').set(Object.assign({}, S.brand, patch, {updatedAt:Date.now()})));
+}
+const QUICK = {
+  arrive:{status:'arrived'},
+  door:{status:'door'},
+  unload:{status:'unloading'},
+  reopen:{status:'unloading', receivedAt:null}
+};
+function quick(id, act){
+  const l = S.loads.find(x => x.id === id); if(!l) return;
+  if(act === 'dropin'){ const d = new Date(); if(patchLoad(id, {kind:'drop', status:'arrived', date:ymd(d), time:hm(d)})) toast('Moved to the drop'); return; }
+  if(act === 'receive'){ if(patchLoad(id, {status:'received', receivedAt:Date.now()})) toast('Marked received'); return; }
+  if(QUICK[act]) patchLoad(id, QUICK[act]);
+}
+
+/* ---------- sheet ---------- */
+function setKindUI(kind, status){
+  $('#lblDate').textContent = kind === 'drop' ? 'Dropped on' : 'Appointment date';
+  $('#lblTime').textContent = kind === 'drop' ? 'Dropped at' : 'Appointment time';
+  const sel = $('#fStatus');
+  const cur = status || sel.value;
+  sel.innerHTML = ST_OPTS[kind].map(o => '<option value="' + o[0] + '">' + o[1] + '</option>').join('');
+  sel.value = ST_OPTS[kind].some(o => o[0] === cur) ? cur : ST_OPTS[kind][0][0];
+}
+function fillRoster(){
+  const names = new Set((Array.isArray(S.settings.roster) ? S.settings.roster : []).map(n => str(n,40)).filter(Boolean));
+  S.loads.forEach(l => { if(l.owner) names.add(l.owner); });
+  $('#rosterList').innerHTML = [...names].sort().map(n => '<option value="' + esc(n) + '"></option>').join('');
+}
+function openSheet(id){
+  if(readOnly()) return;
+  const l = id ? S.loads.find(x => x.id === id) : null;
+  S.editing = l ? l.id : null;
+  const kind = l ? l.kind : (S.tab === 'drop' ? 'drop' : 'appt');
+  $('#sheetTitle').textContent = l ? 'Edit truck' : 'Add truck';
+  (kind === 'drop' ? $('#fKindDrop') : $('#fKindAppt')).checked = true;
+  setKindUI(kind, l ? l.status : (kind === 'drop' ? 'arrived' : 'scheduled'));
+  const now = new Date();
+  $('#fCarrier').value = l ? l.carrier : '';
+  $('#fTrailer').value = l ? l.trailer : '';
+  $('#fRef').value = l ? l.ref : '';
+  $('#fDoor').value = l ? l.door : '';
+  $('#fDate').value = l ? l.date : (S.tab === 'upcoming' ? ymd(new Date(now.getTime() + 864e5)) : ymd(now));
+  $('#fTime').value = l ? l.time : (kind === 'drop' ? hm(now) : '');
+  $('#fPrio' + (l ? l.priority : 3)).checked = true;
+  $('#fOwner').value = l ? l.owner : '';
+  $('#fNotes').value = l ? l.notes : '';
+  $('#fErr').hidden = true;
+  const del = $('#fDelete'); del.hidden = !l; del.dataset.armed = ''; del.classList.remove('armed'); del.textContent = 'Delete';
+  $('#fSave').disabled = false;
+  fillRoster();
+  $('#sheet').hidden = false;
+  setTimeout(() => (l ? $('#fOwner') : $('#fCarrier')).focus(), 30);
+}
+function closeSheet(){ $('#sheet').hidden = true; S.editing = null; }
+function formErr(t){ const e = $('#fErr'); e.textContent = t; e.hidden = false; }
+$('#sheetForm').addEventListener('change', e => {
+  if(e.target.name === 'fKind'){
+    const kind = e.target.value;
+    setKindUI(kind, null);
+    if(kind === 'drop' && !$('#fTime').value) $('#fTime').value = hm(new Date());
+  }
+});
+$('#sheetForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  if(!S.db) return formErr('Not connected. Reload the page and try again.');
+  const kind = document.querySelector('input[name="fKind"]:checked').value;
+  const data = {
+    kind,
+    carrier:str($('#fCarrier').value,40), trailer:str($('#fTrailer').value,24), ref:str($('#fRef').value,60),
+    door:str($('#fDoor').value,12).toUpperCase(), owner:str($('#fOwner').value,40), notes:str($('#fNotes').value,140),
+    date:$('#fDate').value || todayStr(), time:$('#fTime').value,
+    priority:Number(document.querySelector('input[name="fPrio"]:checked').value),
+    status:$('#fStatus').value, updatedAt:Date.now()
+  };
+  if(!data.carrier && !data.trailer && !data.ref) return formErr('Enter a carrier, trailer number or PO so the floor can identify the truck.');
+  if(!data.time){ if(kind === 'appt') return formErr('Enter the appointment time.'); data.time = hm(new Date()); }
+  const prev = S.editing ? S.loads.find(x => x.id === S.editing) : null;
+  data.receivedAt = data.status === 'received' ? ((prev && prev.receivedAt) || Date.now()) : null;
+  const ref = S.db.collection('loads').doc(prev ? prev.id : undefined);
+  commit(prev ? ref.update(data) : ref.set(data));
+  closeSheet(); toast(prev ? 'Saved' : 'Added to the board');
+  if(!prev){ S.tab = kind === 'drop' ? 'drop' : (data.date > todayStr() ? 'upcoming' : 'today'); render(); }
+});
+$('#fDelete').addEventListener('click', async e => {
+  const b = e.currentTarget;
+  if(!b.dataset.armed){ b.dataset.armed = '1'; b.classList.add('armed'); b.textContent = 'Tap again to delete'; setTimeout(() => { b.dataset.armed = ''; b.classList.remove('armed'); b.textContent = 'Delete'; }, 4000); return; }
+  if(!S.editing || !S.db) return;
+  commit(S.db.collection('loads').doc(S.editing).delete()); closeSheet(); toast('Deleted');
+});
+$('#fClose').addEventListener('click', closeSheet);
+$('#fCancel').addEventListener('click', closeSheet);
+$('#sheet').addEventListener('click', e => { if(e.target.id === 'sheet') closeSheet(); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape' && !$('#sheet').hidden) closeSheet(); });
+
+/* ---------- supervisor events ---------- */
+$('#edit').addEventListener('click', e => {
+  const t = e.target.closest('[data-tab],[data-act],[data-edit],[data-pedit],[data-pdel]');
+  if(!t) return;
+  if(t.dataset.pedit){
+    const p = S.people.find(x => x.id === t.dataset.pedit); if(!p) return;
+    $('#pUid').value = p.id; $('#pName').value = str(p.name, 40);
+    ({admin:$('#pRoleA'), supervisor:$('#pRoleS')}[p.role] || $('#pRoleV')).checked = true;
+    peopleErr(''); $('#pName').focus(); return;
+  }
+  if(t.dataset.pdel){
+    if(!t.dataset.armed){ t.dataset.armed = '1'; t.classList.add('armed'); t.textContent = 'Tap again'; setTimeout(() => renderPeople(), 4000); return; }
+    commit(S.db.doc('roles/' + t.dataset.pdel).delete()); toast('Removed from the board'); return;
+  }
+  if(t.dataset.tab){ S.tab = t.dataset.tab; try{ localStorage.setItem('dockTab', S.tab); }catch(_){} render(); if(S.tab === 'settings') fillSettings(true); return; }
+  if(t.dataset.act) return quick(t.dataset.id, t.dataset.act);
+  if(t.dataset.edit) return openSheet(t.dataset.edit);
+});
+$('#btnAdd').addEventListener('click', () => { if(S.tab === 'received' || S.tab === 'settings') S.tab = 'today'; render(); openSheet(null); });
+$('#sMsgSave').addEventListener('click', async () => { const el = $('#sMsg'); if(await saveSettings({message:str(el.value,160)})){ delete el.dataset.dirty; toast('Notice updated on the board'); } });
+$('#sMsgClear').addEventListener('click', async () => { const el = $('#sMsg'); el.value = ''; if(await saveSettings({message:''})){ delete el.dataset.dirty; toast('Notice cleared'); } });
+$('#sRosterSave').addEventListener('click', async () => {
+  const el = $('#sRoster');
+  const roster = [...new Set(el.value.split('\n').map(s => str(s,40)).filter(Boolean))].slice(0,100);
+  if(await saveSettings({roster})){ delete el.dataset.dirty; toast('Names saved'); }
+});
+document.querySelectorAll('input[name="sClock"]').forEach(r => r.addEventListener('change', e => saveSettings({clock:e.target.value})));
+document.querySelectorAll('input[name="sTheme"]').forEach(r => r.addEventListener('change', e => saveBrand({boardTheme:e.target.value})));
+$('#sSiteSave').addEventListener('click', async () => { const el = $('#sSite'); if(await saveBrand({siteName:str(el.value,60)})){ delete el.dataset.dirty; toast('Site name saved'); } });
+$('#acctOut').addEventListener('click', () => { if(S.fb) S.fb.F.signOut(S.fb.auth); });
+$('#sDemo').addEventListener('click', () => setView('demo'));
+$('#sClear').addEventListener('click', async e => {
+  const b = e.currentTarget;
+  const rec = S.loads.filter(l => l.status === 'received');
+  if(!rec.length) return toast('Nothing to clear');
+  if(!b.dataset.armed){ b.dataset.armed = '1'; b.classList.add('armed'); b.textContent = 'Tap again to delete ' + rec.length; setTimeout(() => { b.dataset.armed = ''; b.classList.remove('armed'); fillSettings(false); }, 4000); return; }
+  rec.forEach(l => commit(S.db.collection('loads').doc(l.id).delete()));
+  b.dataset.armed = ''; b.classList.remove('armed'); fillSettings(false);
+  toast('Cleared ' + rec.length + ' received truck' + (rec.length === 1 ? '' : 's'));
+});
+
+/* ---------- toast ---------- */
+let toastT;
+function toast(t){ const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { el.hidden = true; }, 2800); }
+
+/* ---------- demo rows (local only) ---------- */
+function makeDemo(){
+  const now = Date.now();
+  const at = off => { const d = new Date(now + off*60000); return {date:ymd(d), time:hm(d)}; };
+  let i = 0;
+  const L = (o, off) => norm('demo' + (i++), Object.assign({updatedAt:now}, at(off), o));
+  return [
+    L({kind:'drop', status:'arrived', priority:1, trailer:'53214', carrier:'Old Dominion', ref:'PO 4500018832', door:'Y-07', owner:'A. Ortiz', notes:'Line-down part'}, -312),
+    L({kind:'drop', status:'unloading', priority:2, trailer:'TRL 8841', carrier:'Schneider', ref:'ASN 77120', door:'D04', owner:'K. Bell'}, -160),
+    L({kind:'drop', status:'door', priority:3, trailer:'6620', carrier:'Werner', ref:'BOL 33891', door:'D09', owner:'M. Tran'}, -55),
+    L({kind:'drop', status:'arrived', priority:3, trailer:'99017', carrier:'J.B. Hunt', ref:'PO 4500018790', door:'Y-12'}, -1620),
+    L({kind:'appt', status:'unloading', priority:2, carrier:'Averitt', trailer:'25510', ref:'ASN 77135', door:'D06', owner:'A. Ortiz'}, -65),
+    L({kind:'appt', status:'scheduled', priority:1, carrier:'Estes', ref:'PO 4500018851', door:'D02', owner:'K. Bell'}, -40),
+    L({kind:'appt', status:'arrived', priority:3, carrier:'ABF Freight', trailer:'4471', ref:'PO 4500018871', door:'D07'}, -10),
+    L({kind:'appt', status:'scheduled', priority:3, carrier:'Saia', ref:'PO 4500018860', door:'D03'}, 35),
+    L({kind:'appt', status:'scheduled', priority:2, carrier:'FedEx Freight', ref:'PO 4500018866', door:'D05', owner:'M. Tran', notes:'Temp-controlled'}, 95),
+    L({kind:'appt', status:'scheduled', priority:3, carrier:'R+L Carriers', ref:'ASN 77140', door:'D02', owner:'J. Ruiz'}, 180),
+    L({kind:'appt', status:'received', priority:3, carrier:'Southeastern', ref:'PO 4500018801', door:'D01', owner:'J. Ruiz', receivedAt:now - 3*3600e3}, -300),
+    L({kind:'appt', status:'received', priority:2, carrier:'Old Dominion', ref:'PO 4500018812', door:'D04', owner:'A. Ortiz', receivedAt:now - 2*3600e3}, -240)
+  ];
+}
+
+/* ---------- views ---------- */
+let wakeLock = null;
+async function keepAwake(){
+  if(S.view === 'edit' || wakeLock || !navigator.wakeLock) return;
+  try{ wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); }catch(_){}
+}
+function applyTheme(){
+  const onBoard = S.view !== 'edit';
+  document.documentElement.classList.toggle('force-dark', onBoard && S.brand.boardTheme !== 'screen');
+}
+function setView(v, fromHash){
+  S.view = v; S.demo = v === 'demo';
+  if(S.demo) S.demoLoads = makeDemo();
+  S.page = {drop:0, appt:0};
+  if(v !== 'demo'){ try{ localStorage.setItem('dockView', v); }catch(_){} }
+  if(!fromHash && location.hash !== '#' + v){ try{ location.hash = v; }catch(_){} }
+  applyVisibility(); render(); keepAwake(); poke();
+  window.scrollTo(0,0);
+}
+function applyVisibility(){
+  const gated = !S.ready && S.view !== 'demo';
+  $('#gate').hidden = !gated;
+  $('#board').hidden = gated || S.view === 'edit';
+  $('#edit').hidden = gated || S.view !== 'edit';
+  applyTheme();
+}
+function showGate(state, msg){
+  S.gate = state;
+  $('#gateWait').hidden = state !== 'wait';
+  if(state === 'wait') $('#gateWait').textContent = msg || 'Connecting…';
+  $('#gateSetup').hidden = state !== 'setup';
+  $('#gateLogin').hidden = state !== 'login';
+  $('#gateDenied').hidden = state !== 'denied';
+  if(state === 'denied'){ $('#dEmail').textContent = (S.authUser && S.authUser.email) || 'this account'; $('#dUid').textContent = (S.authUser && S.authUser.uid) || ''; }
+  applyVisibility();
+}
+function viewFromHash(){ const h = (location.hash || '').slice(1); return ['board','edit','demo'].includes(h) ? h : null; }
+window.addEventListener('hashchange', () => { const v = viewFromHash(); if(v && v !== S.view) setView(v, true); });
+$('#btnToEdit').addEventListener('click', () => setView('edit'));
+$('#btnToBoard').addEventListener('click', () => setView('board'));
+$('#btnExitDemo').addEventListener('click', () => { S.tab = 'settings'; setView('edit'); });
+$('#btnFull').addEventListener('click', () => {
+  const el = document.documentElement;
+  try{
+    if(document.fullscreenElement) document.exitFullscreen();
+    else if(el.requestFullscreen) el.requestFullscreen().catch(() => toast('Full screen isn’t available here. Use the TV browser’s full-screen key.'));
+    else toast('Full screen isn’t available here. Use the TV browser’s full-screen key.');
+  }catch(_){ toast('Full screen isn’t available here.'); }
+});
+
+/* idle: hide controls + cursor on the TV */
+let idleT;
+function poke(){ const b = $('#board'); b.classList.remove('idle'); clearTimeout(idleT); idleT = setTimeout(() => { if(FIT.matches) b.classList.add('idle'); }, 5000); }
+['pointermove','pointerdown','keydown'].forEach(ev => document.addEventListener(ev, poke, {passive:true}));
+
+function render(){ if(!S.ready && S.view !== 'demo') return; if(S.view === 'edit') renderEdit(); else renderBoard(); }
+document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible'){ keepAwake(); render(); } });
+let rT; window.addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(render, 150); });
+setInterval(() => { if(S.view !== 'edit') tickClock(); }, 1000);
+setInterval(render, 30000);
+setInterval(() => { if(S.view !== 'edit' && FIT.matches){ S.page.drop++; S.page.appt++; renderBoard(); } }, 12000);
+$('#logoImg').addEventListener('error', () => { $('#logoPlate').hidden = true; });
+
+/* ---------- boot ---------- */
+(function boot(){
+  try{ const t = localStorage.getItem('dockTab'); if(['drop','today','upcoming','received','settings'].includes(t)) S.tab = t; }catch(_){}
+  let v = viewFromHash();
+  if(!v){ try{ v = localStorage.getItem('dockView'); }catch(_){} }
+  if(v !== 'board' && v !== 'edit' && v !== 'demo') v = window.innerWidth >= 1000 ? 'board' : 'edit';
+  setView(v, true);
+})();
+
+/* ---------- sign-in gate ---------- */
+$('#gateLogin').addEventListener('submit', async e => {
+  e.preventDefault();
+  const email = $('#lEmail').value.trim(), pass = $('#lPass').value, err = $('#lErr');
+  err.hidden = true;
+  if(!email || !pass){ err.textContent = 'Enter your email and password.'; err.hidden = false; return; }
+  if(!S.fb) return;
+  $('#lGo').disabled = true;
+  try{ await S.fb.F.signInWithEmailAndPassword(S.fb.auth, email, pass); $('#lPass').value = ''; }
+  catch(x){
+    const c = x && x.code;
+    err.textContent = c === 'auth/too-many-requests' ? 'Too many tries. Wait a few minutes, then try again.'
+      : c === 'auth/network-request-failed' ? 'No connection. Check the network and try again.'
+      : 'That email and password don’t match an account on this board.';
+    err.hidden = false;
+  }finally{ $('#lGo').disabled = false; }
+});
+$('#dOut').addEventListener('click', () => { if(S.fb) S.fb.F.signOut(S.fb.auth); });
+$('#dCopy').addEventListener('click', () => {
+  const uid = $('#dUid').textContent;
+  const sel = () => { const r = document.createRange(); r.selectNodeContents($('#dUid')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); };
+  try{ navigator.clipboard.writeText(uid).then(() => toast('User ID copied'), sel); }catch(_){ sel(); }
+});
+$('#gDemo').addEventListener('click', () => setView('demo'));
+
+/* ---------- Firebase ---------- */
+function makeDb(Fs, fs){
+  const ref = r => ({ id:r.id, set:d => Fs.setDoc(r, d), update:d => Fs.updateDoc(r, d), delete:() => Fs.deleteDoc(r) });
+  return {
+    collection: p => ({ doc: id => ref(id ? Fs.doc(fs, p, id) : Fs.doc(Fs.collection(fs, p))) }),
+    doc: p => ref(Fs.doc(fs, p))
+  };
+}
+function stopData(){ S.unsubs.forEach(u => { try{ u(); }catch(_){} }); S.unsubs = []; }
+function startData(){
+  const {Fs, fs} = S.fb;
+  stopData();
+  S.unsubs.push(Fs.onSnapshot(Fs.query(Fs.collection(fs, 'loads'), Fs.limit(1000)), {includeMetadataChanges:true}, snap => {
+    S.loads = snap.docs.map(d => norm(d.id, d.data()));
+    S.conn = snap.metadata.fromCache ? 'offline' : 'live';
+    render();
+  }, err => { S.conn = 'error'; render(); }));
+  S.unsubs.push(Fs.onSnapshot(Fs.doc(fs, 'board', 'settings'), s => { S.settings = s.exists() ? (s.data() || {}) : {}; render(); }, () => {}));
+  S.unsubs.push(Fs.onSnapshot(Fs.doc(fs, 'admin', 'brand'), s => { S.brand = s.exists() ? (s.data() || {}) : {}; applyTheme(); render(); }, () => {}));
+  if(S.role === 'admin'){
+    S.unsubs.push(Fs.onSnapshot(Fs.collection(fs, 'roles'), snap => {
+      S.people = snap.docs.map(d => Object.assign({}, d.data(), {id:d.id}));
+      if(S.view === 'edit' && S.tab === 'settings') renderPeople();
+    }, () => {}));
+  } else S.people = [];
+}
+(async function connect(){
+  const cfg = window.FIREBASE_CONFIG;
+  if(!cfg || !cfg.apiKey || /PASTE/i.test(cfg.apiKey + cfg.projectId)){ showGate('setup'); return; }
+  let A, F, Fs;
+  try{ [A, F, Fs] = await Promise.all([import(FB + 'firebase-app.js'), import(FB + 'firebase-auth.js'), import(FB + 'firebase-firestore.js')]); }
+  catch(_){ showGate('wait', 'Can’t reach Firebase from this network. Ask IT to allow gstatic.com, googleapis.com and firebaseapp.com, then reload.'); return; }
+  const app = A.initializeApp(cfg);
+  const auth = F.getAuth(app);
+  let fs;
+  try{ fs = Fs.initializeFirestore(app, {localCache: Fs.persistentLocalCache({tabManager: Fs.persistentMultipleTabManager()})}); }
+  catch(_){ fs = Fs.getFirestore(app); }
+  S.fb = {auth, F, Fs, fs};
+  S.db = makeDb(Fs, fs);
+  F.onAuthStateChanged(auth, user => {
+    if(S.roleUnsub){ S.roleUnsub(); S.roleUnsub = null; }
+    stopData();
+    S.authUser = user; S.role = null; S.ready = false; S.loads = []; S.people = [];
+    if(!user){ showGate('login'); return; }
+    showGate('wait', 'Checking access…');
+    S.roleUnsub = Fs.onSnapshot(Fs.doc(fs, 'roles', user.uid), {includeMetadataChanges:true}, snap => {
+      const role = snap.exists() ? (snap.data() || {}).role : null;
+      if(!ROLE_LABEL[role]){
+        if(snap.metadata.fromCache){ showGate('wait', 'Waiting for the network…'); return; }
+        S.role = null; S.ready = false; stopData(); showGate('denied'); return;
+      }
+      const changed = !S.ready || role !== S.role;
+      S.role = role; S.canWrite = role !== 'viewer'; S.canAdmin = role === 'admin'; S.writeDenied = false;
+      if(changed){ S.ready = true; startData(); showGate('ready'); }
+      render();
+    }, () => { S.ready = false; stopData(); showGate('denied'); });
+  });
+})();
+})();
+</script>
+</body>
+</html>
