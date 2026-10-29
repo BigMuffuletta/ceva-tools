@@ -80,7 +80,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .b-head{background:var(--head);color:var(--on-head);display:flex;flex-wrap:wrap;align-items:center;gap:.8em 1.4em;padding-block:.8em}
 .b-brand{display:flex;align-items:center;gap:1em;min-width:0}
-.logo-plate{background:var(--plate);border-radius:.25em;padding:.4em .75em;height:3.4em;display:flex;align-items:center}
+.logo-plate{height:2.9em;display:flex;align-items:center}
 .logo-plate img{height:100%;width:auto;max-width:14em;object-fit:contain;display:block}
 .b-eyebrow{font:600 .8em/1.1 var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--head-muted)}
 .b-title{margin:.1em 0 0;font:700 2.1em/1 var(--f-display);letter-spacing:.02em;text-transform:uppercase;text-wrap:balance}
@@ -261,7 +261,7 @@ textarea.inp{min-height:5.5rem;resize:vertical;line-height:1.4}
 /* ───────── SIGN-IN GATE ───────── */
 .gate{min-height:100%;display:flex;align-items:center;justify-content:center;padding-block:2rem;background:var(--bg)}
 .gate-card{width:100%;max-width:420px;background:var(--panel);border:1px solid var(--line);border-radius:.6rem;overflow:hidden;display:flex;flex-direction:column}
-.gate-head{background:var(--plate);padding:1.1rem 1.25rem;border-bottom:4px solid var(--red)}
+.gate-head{background:var(--head);padding:1.1rem 1.25rem;border-bottom:4px solid var(--red)}
 .gate-head img{height:2.6rem;width:auto;display:block}
 .gate-body{padding:1.1rem 1.25rem 1.25rem;display:flex;flex-direction:column;gap:.9rem}
 .gate-title{margin:0;font:700 1.6rem/1 var(--f-display);text-transform:uppercase;letter-spacing:.03em}
@@ -292,7 +292,7 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
   <!-- SIGN-IN GATE -->
   <section id="gate" class="gate gut" aria-label="Sign in" hidden>
     <div class="gate-card">
-      <div class="gate-head"><img src="../assets/ceva-logo.svg" alt="CEVA Logistics"></div>
+      <div class="gate-head"><img src="../assets/ceva-logo-white.svg" alt="CEVA Logistics"></div>
       <div class="gate-body">
         <h1 class="gate-title">Receiving Dock</h1>
         <p class="gate-p" id="gateWait">Connecting…</p>
@@ -420,7 +420,7 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
         </div>
         <div class="set" id="setAdmin" hidden>
           <h3>Branding</h3>
-          <p>Only admins see this section. The logo comes from <code>assets/ceva-logo.svg</code> in the repository.</p>
+          <p>Only admins see this section. The logo comes from <code>assets/ceva-logo-white.svg</code> in the repository.</p>
           <div class="fld"><label for="sSite">Site name (above the board title)</label><input class="inp" id="sSite" maxlength="60" placeholder="Atlanta Receiving"></div>
           <div class="row-btns"><button type="button" class="btn primary" id="sSiteSave">Save site name</button></div>
           <div class="fld"><span class="lab">Board colors on the TV</span>
@@ -496,7 +496,7 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 (function(){
 'use strict';
 const FB = 'https://www.gstatic.com/firebasejs/10.14.1/';
-const LOGO = '../assets/ceva-logo.svg';
+const LOGO = '../assets/ceva-logo-white.svg';
 const ROLE_LABEL = {viewer:'Viewer', supervisor:'Supervisor', admin:'Admin'};
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

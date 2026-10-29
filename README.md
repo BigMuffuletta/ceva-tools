@@ -6,7 +6,7 @@ Operational tools for CEVA sites, served with GitHub Pages.
 |---|---|---|
 | Receiving dock board | [`dock-board/`](dock-board/) | Floor TV display of trailers in the drop and today's appointments, with priority, door, pathway owner and status. Supervisors update it from a phone. |
 
-Shared files live in [`assets/`](assets/) (CEVA logo).
+Shared files live in [`assets/`](assets/): `ceva-logo-white.svg` is the logo used on the navy headers; `ceva-logo.svg` (navy and red) is only the browser-tab icon.
 
 ---
 
@@ -47,7 +47,7 @@ Anyone who signs in without a role sees only their User UID and a request to sen
 
 ### Changing the logo
 
-Replace [`assets/ceva-logo.svg`](assets/ceva-logo.svg). Use SVG or PNG; keep the CEVA navy and red on a white background (the board puts it on a white plate).
+Replace [`assets/ceva-logo-white.svg`](assets/ceva-logo-white.svg) with the same file name. It sits directly on the navy header, so use the white (reversed) version of the logo.
 
 ### Limits
 
