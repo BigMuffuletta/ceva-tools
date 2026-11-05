@@ -1,0 +1,158 @@
+rules_version = '2';
+
+// Customer request tracker — Firestore security rules.
+// Paste into Firebase console → Firestore Database → Rules, then Publish.
+//
+// Who can do what is set by roles/{uid}:
+//   customer → { role: 'customer', account: 'Acme Foods', name }
+//              Submits requests and sees only its own account's requests and replies.
+//   agent    → CEVA team. Sees every account; updates, replies to and closes requests.
+//   admin    → CEVA admin. Also manages people and portal settings.
+// Anyone signed in without a role can only ask for access (access/{uid}).
+//
+// Requests are numbered from counters/requests in the same transaction (#1001, #1002, ...).
+// Replies the customer sees live in requests/{id}/thread; CEVA-only notes in requests/{id}/internal.
+// Neither can be edited or deleted, so the history stays intact.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn()   { return request.auth != null; }
+    function rolePath()   { return /databases/$(database)/documents/roles/$(request.auth.uid); }
+    function hasRole()    { return signedIn() && exists(rolePath()); }
+    function me()         { return get(rolePath()).data; }
+    function isStaff()    { return hasRole() && me().role in ['agent', 'admin']; }
+    function isAdmin()    { return hasRole() && me().role == 'admin'; }
+    function isCustomer() { return hasRole() && me().role == 'customer' && me().get('account', '') is string && me().get('account', '') != ''; }
+    function myAccount()  { return me().account; }
+    function counterPath() { return /databases/$(database)/documents/counters/requests; }
+
+    function text(v, max)   { return v is string && v.size() <= max; }
+    function filled(v, max) { return v is string && v.size() > 0 && v.size() <= max; }
+    function numOrNull(v)   { return v == null || v is number; }
+
+    function validRequest(d) {
+      let keys = ['account', 'category', 'priority', 'subject', 'details', 'refs', 'neededBy',
+                  'status', 'owner', 'resolution', 'source',
+                  'createdAt', 'createdBy', 'createdByName', 'createdByEmail', 'updatedAt',
+                  'closedAt', 'firstResponseAt', 'lastReplyAt', 'lastReplyBy'];
+      return d.keys().hasOnly(keys) && d.keys().hasAll(keys)
+        && filled(d.account, 60) && text(d.category, 60)
+        && d.priority in ['normal', 'high', 'urgent']
+        && filled(d.subject, 120) && text(d.details, 4000) && text(d.refs, 300)
+        && (d.neededBy == '' || (d.neededBy is string && d.neededBy.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')))
+        && d.status in ['new', 'in_progress', 'waiting', 'closed']
+        && text(d.owner, 60) && text(d.resolution, 2000)
+        && d.source in ['portal', 'ceva']
+        && d.createdAt is number && d.updatedAt is number
+        && filled(d.createdBy, 128) && text(d.createdByName, 60) && text(d.createdByEmail, 120)
+        && numOrNull(d.closedAt) && numOrNull(d.firstResponseAt) && numOrNull(d.lastReplyAt)
+        && d.lastReplyBy in ['', 'customer', 'ceva'];
+    }
+
+    // The running request number. Only ever goes up by one, together with the new request.
+    match /counters/requests {
+      allow read: if isStaff() || isCustomer();
+      allow create: if (isStaff() || isCustomer())
+        && request.resource.data.keys().hasOnly(['n'])
+        && request.resource.data.n == 1001
+        && existsAfter(/databases/$(database)/documents/requests/1001);
+      allow update: if (isStaff() || isCustomer())
+        && request.resource.data.keys().hasOnly(['n'])
+        && request.resource.data.n == resource.data.n + 1
+        && existsAfter(/databases/$(database)/documents/requests/$(string(request.resource.data.n)));
+    }
+
+    match /requests/{rid} {
+      allow read: if isStaff() || (isCustomer() && resource.data.account == myAccount());
+
+      allow create: if validRequest(request.resource.data)
+        && rid == string(getAfter(counterPath()).data.n)
+        && request.resource.data.createdBy == request.auth.uid
+        && (isStaff() || (isCustomer()
+              && request.resource.data.account == myAccount()
+              && request.resource.data.status == 'new'
+              && request.resource.data.source == 'portal'
+              && request.resource.data.owner == ''
+              && request.resource.data.resolution == ''
+              && request.resource.data.closedAt == null
+              && request.resource.data.firstResponseAt == null
+              && request.resource.data.lastReplyAt == null
+              && request.resource.data.lastReplyBy == ''));
+
+      // CEVA can change anything but who created it and when.
+      // A customer can only record a reply, which moves "waiting on customer" back to "in progress".
+      allow update: if validRequest(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.createdBy == resource.data.createdBy
+        && (isStaff() || (isCustomer()
+              && resource.data.account == myAccount()
+              && resource.data.status != 'closed'
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt', 'lastReplyAt', 'lastReplyBy'])
+              && request.resource.data.lastReplyBy == 'customer'
+              && (request.resource.data.status == resource.data.status
+                  || (resource.data.status == 'waiting' && request.resource.data.status == 'in_progress'))));
+
+      allow delete: if isAdmin();
+
+      function parent() { return get(/databases/$(database)/documents/requests/$(rid)).data; }
+      function validNote(d) {
+        let keys = ['text', 'at', 'by', 'byName', 'side', 'kind'];
+        return d.keys().hasOnly(keys) && d.keys().hasAll(keys)
+          && filled(d.text, 2000) && d.at is number
+          && d.by == request.auth.uid && text(d.byName, 60)
+          && d.kind in ['msg', 'status'];
+      }
+
+      // Replies and status changes the customer sees.
+      match /thread/{nid} {
+        allow read: if isStaff() || (isCustomer() && parent().account == myAccount());
+        allow create: if validNote(request.resource.data) && (
+          (isStaff() && request.resource.data.side == 'ceva')
+          || (isCustomer()
+              && request.resource.data.side == 'customer'
+              && request.resource.data.kind == 'msg'
+              && parent().account == myAccount()
+              && parent().status != 'closed'));
+      }
+
+      // CEVA-only notes. Customers can never read these.
+      match /internal/{nid} {
+        allow read: if isStaff();
+        allow create: if isStaff() && validNote(request.resource.data)
+          && request.resource.data.side == 'ceva' && request.resource.data.kind == 'msg';
+      }
+    }
+
+    // Portal name, request types, close-time targets, owner names.
+    match /config/{docId} {
+      allow read: if hasRole();
+      allow write: if isAdmin() && request.resource.data.size() <= 30;
+    }
+
+    // Who can use the portal. Each person can read their own role.
+    match /roles/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasOnly(['role', 'name', 'account', 'email', 'updatedAt'])
+        && request.resource.data.role in ['customer', 'agent', 'admin']
+        && text(request.resource.data.get('name', ''), 60)
+        && text(request.resource.data.get('email', ''), 120)
+        && (request.resource.data.role != 'customer' || filled(request.resource.data.get('account', ''), 60))
+        && (uid != request.auth.uid || request.resource.data.role == 'admin');
+      allow delete: if isAdmin() && request.auth.uid != uid;
+    }
+
+    // "Let me in" requests from people who created an account. Admins approve or dismiss them.
+    match /access/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['name', 'company', 'email', 'at'])
+        && filled(request.resource.data.name, 60)
+        && text(request.resource.data.company, 80)
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.at is number;
+      allow delete: if isAdmin() || (signedIn() && request.auth.uid == uid);
+    }
+  }
+}

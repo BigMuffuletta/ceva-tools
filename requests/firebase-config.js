@@ -1,0 +1,12 @@
+// Firebase web app config for the customer request tracker.
+// Use a separate Firebase project from the dock board: customers sign in here, so keep them out of internal tools.
+// Get it from the Firebase console: Project settings (gear icon) → General → Your apps → Web app → "SDK setup and configuration" → Config.
+// These values identify the project; they are not secrets. Access is controlled by firestore.rules and sign-in.
+window.FIREBASE_CONFIG = {
+  apiKey: "PASTE_API_KEY",
+  authDomain: "PASTE_PROJECT_ID.firebaseapp.com",
+  projectId: "PASTE_PROJECT_ID",
+  storageBucket: "PASTE_PROJECT_ID.appspot.com",
+  messagingSenderId: "PASTE_SENDER_ID",
+  appId: "PASTE_APP_ID"
+};
