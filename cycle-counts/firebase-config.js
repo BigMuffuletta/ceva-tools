@@ -1,7 +1,3 @@
-// Firebase web app config for cycle count requests.
-// Use a separate Firebase project from the dock board: customers sign in here, so keep them out of internal tools.
-// Get it from the Firebase console: Project settings (gear icon) → General → Your apps → Web app → "SDK setup and configuration" → Config.
-// These values identify the project; they are not secrets. Access is controlled by firestore.rules and sign-in.
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
