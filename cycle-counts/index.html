@@ -4,15 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
-<title>Customer Requests</title>
+<title>Cycle Counts</title>
 <link rel="icon" href="../assets/ceva-logo.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap">
 <style>
 /* Layout: navy brand band + sticky nav row, then one centered column (max 1180px).
-   Requests = one filter row + a list (table-like rows on wide screens, stacked cards on phones); a request opens in a right-hand drawer (bottom sheet on phones).
-   Dashboard = filter row, hero + stat tiles, then chart cards in a two-column grid. Light-first; dark follows the OS. */
+   Counts = one filter row + a list (table-like rows on wide screens, stacked cards on phones); a count opens in a right-hand drawer (bottom sheet on phones)
+   holding the lines to count, CEVA's results entry, the customer's approve-or-recount step and the update thread.
+   Dashboard = filter row, hero + stat tiles, then chart cards in a two-column grid. Light-first; dark follows the OS.
+   Words follow SAP EWM: product, storage bin, batch, UoM, book qty, counted, difference, PI document. */
 :root{
   --navy:#1D2546; --red:#E30613;
   --bg:#eef2f8; --panel:#ffffff; --sunk:#f4f7fb; --line:#d2dbe8; --line2:#e6ebf2;
@@ -21,7 +23,7 @@
   --input:#ffffff; --btn:#e6ecf5; --btn-fg:#0b1a33; --primary:#002048; --on-primary:#ffffff; --focus:#1f5fbf;
   --ok:#17703f; --ok-bg:#e2f3e9; --warn:#8a5300; --warn-bg:#fff1d6; --bad:#c80f0b; --bad-bg:#fdeceb; --info-bg:#e7f0fc;
   --urgent:#e6100d; --on-urgent:#ffffff; --high:#ffb020; --on-high:#1b1300; --normal:#dfe6f0; --on-normal:#22344f;
-  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#6250d6;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --done:#008300;
   --grid:#e6ebf2; --axis:#b8c4d6;
   --scrim:rgba(10,20,40,.45); --toast:#0b1a33; --on-toast:#ffffff; --shadow:0 10px 30px rgba(10,20,40,.18);
   --f-display:"Barlow Condensed","Arial Narrow","Roboto Condensed",system-ui,sans-serif;
@@ -35,7 +37,7 @@
     --input:#0c1833; --btn:#1a2d52; --btn-fg:#f1f5fb; --primary:#3d7ee0; --on-primary:#ffffff; --focus:#8cbcff;
     --ok:#4fd08b; --ok-bg:#0f3526; --warn:#ffbf47; --warn-bg:#3a2a0b; --bad:#ff6a5e; --bad-bg:#3d1520; --info-bg:#132b52;
     --high:#f5a00f; --normal:#24416b; --on-normal:#dce6f4;
-    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#9085e9;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --done:#0ca30c;
     --grid:#1a2c4d; --axis:#2c4470;
     --scrim:rgba(2,10,24,.66); --toast:#f1f5fb; --on-toast:#071a33; --shadow:0 10px 30px rgba(0,0,0,.45);
     color-scheme:dark;
@@ -47,7 +49,7 @@
   --input:#0c1833; --btn:#1a2d52; --btn-fg:#f1f5fb; --primary:#3d7ee0; --on-primary:#ffffff; --focus:#8cbcff;
   --ok:#4fd08b; --ok-bg:#0f3526; --warn:#ffbf47; --warn-bg:#3a2a0b; --bad:#ff6a5e; --bad-bg:#3d1520; --info-bg:#132b52;
   --high:#f5a00f; --normal:#24416b; --on-normal:#dce6f4;
-  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#9085e9;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --done:#0ca30c;
   --grid:#1a2c4d; --axis:#2c4470;
   --scrim:rgba(2,10,24,.66); --toast:#f1f5fb; --on-toast:#071a33; --shadow:0 10px 30px rgba(0,0,0,.45);
   color-scheme:dark;
@@ -97,6 +99,8 @@ body.demo .wrap{padding-bottom:7rem}
 /* ───────── controls ───────── */
 .btn{background:var(--btn);color:var(--btn-fg);border:1px solid var(--line);border-radius:.4rem;min-height:2.75rem;padding:0 1rem;font:600 .95rem/1 var(--f-body);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:.4rem;text-decoration:none;white-space:nowrap}
 .btn.primary{background:var(--primary);color:var(--on-primary);border-color:transparent}
+.btn.go{background:var(--done);color:#fff;border-color:transparent}
+.btn.armed{background:var(--urgent);color:#fff;border-color:transparent}
 .btn.danger{color:var(--bad);border-color:var(--bad);background:transparent}
 .btn.danger.armed{background:var(--urgent);color:#fff;border-color:transparent}
 .btn.ghost{background:transparent}
@@ -108,6 +112,7 @@ body.demo .wrap{padding-bottom:7rem}
 .inp{width:100%;min-height:2.85rem;background:var(--input);color:var(--fg);border:1px solid var(--line);border-radius:.4rem;padding:.55rem .7rem;font-size:16px}
 textarea.inp{min-height:7rem;resize:vertical;line-height:1.45}
 .inp:focus{border-color:var(--focus);outline:none;box-shadow:0 0 0 2px var(--focus)}
+.inp.bad{border-color:var(--bad);box-shadow:0 0 0 1px var(--bad)}
 select.inp{appearance:auto}
 .hint{font-size:.85rem;color:var(--muted);margin:0;line-height:1.4}
 .err{color:var(--bad);font-weight:600;font-size:.92rem}
@@ -123,19 +128,27 @@ select.inp{appearance:auto}
 .segm input:focus-visible+span{outline:3px solid var(--focus);outline-offset:-3px}
 .segm.prio input[value="urgent"]:checked+span{background:var(--urgent);color:var(--on-urgent)}
 .segm.prio input[value="high"]:checked+span{background:var(--high);color:var(--on-high)}
-.segm.st4{display:grid;grid-template-columns:1fr 1fr}
-.segm.st4 label:nth-child(3) span{border-left:0}
-.segm.st4 label:nth-child(n+3) span{border-top:1px solid var(--line)}
-@media (min-width:600px){.segm.st4{grid-template-columns:repeat(4,1fr)}.segm.st4 label:nth-child(3) span{border-left:1px solid var(--line)}.segm.st4 label:nth-child(n+3) span{border-top:0}}
+.segm.st6{display:grid;grid-template-columns:repeat(2,1fr)}
+.segm.st6 label span{border-left:0;border-top:1px solid var(--line)}
+.segm.st6 label:nth-child(-n+2) span{border-top:0}
+.segm.st6 label:nth-child(even) span{border-left:1px solid var(--line)}
+@media (min-width:600px){
+  .segm.st6{grid-template-columns:repeat(3,1fr)}
+  .segm.st6 label span{border-left:1px solid var(--line);border-top:1px solid var(--line)}
+  .segm.st6 label:nth-child(-n+3) span{border-top:0}
+  .segm.st6 label:nth-child(3n+1) span{border-left:0}
+}
 .check{display:flex;gap:.6rem;align-items:flex-start;font-size:.95rem;cursor:pointer}
 .check input{width:1.2rem;height:1.2rem;margin:.1rem 0 0;flex:none;accent-color:var(--primary)}
 
 /* ───────── chips ───────── */
 .st{display:inline-flex;align-items:center;gap:.4rem;font:600 .8rem/1 var(--f-body);padding:.34rem .6rem .34rem .5rem;border-radius:1rem;background:var(--sunk);border:1px solid var(--line);white-space:nowrap;color:var(--fg)}
 .st i{width:.55rem;height:.55rem;border-radius:50%;background:var(--s1);flex:none}
-.st.in_progress i{background:var(--s2)}
-.st.waiting i{background:var(--s4)}
-.st.closed i{background:var(--s3)}
+.st.scheduled i{background:var(--s2)}
+.st.counting i{background:var(--s3)}
+.st.review i{background:var(--s4)}
+.st.approved i{background:var(--s5)}
+.st.closed i{background:var(--done)}
 .st.you{background:var(--warn-bg);border-color:transparent;color:var(--warn)}
 .st.you i{background:var(--warn)}
 .pr{display:inline-block;font:700 .68rem/1 var(--f-display);letter-spacing:.1em;text-transform:uppercase;padding:.3rem .42rem;border-radius:.2rem;background:var(--normal);color:var(--on-normal);vertical-align:.08em;white-space:nowrap}
@@ -146,8 +159,12 @@ select.inp{appearance:auto}
 .due.late{color:var(--bad);font-weight:700}
 .due.soon{color:var(--warn);font-weight:600}
 .due.ok{color:var(--ok)}
+.res.var{color:var(--bad);font-weight:600}
+.res.ok{color:var(--ok);font-weight:600}
+.diff{font-weight:700;color:var(--bad);font-variant-numeric:tabular-nums}
+.diff.zero{font-weight:400;color:var(--muted)}
 
-/* ───────── request list ───────── */
+/* ───────── counts list ───────── */
 .filters{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center}
 .fchips{display:flex;gap:.3rem;flex-wrap:wrap}
 .fchip{display:inline-flex;align-items:center;gap:.4rem;min-height:2.5rem;padding:0 .8rem;border-radius:2rem;border:1px solid var(--line);background:var(--panel);color:var(--muted);font:600 .9rem/1 var(--f-body);cursor:pointer}
@@ -164,38 +181,40 @@ select.inp{appearance:auto}
 .req::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px}
 .req.urgent::before{background:var(--urgent)}
 .req.high::before{background:var(--high)}
-.r-id{grid-area:id;font:700 1rem/1.3 var(--f-display);letter-spacing:.03em;color:var(--muted);font-variant-numeric:tabular-nums}
+.r-id{grid-area:id;font:700 1rem/1.3 var(--f-display);letter-spacing:.03em;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .r-main{grid-area:main;min-width:0;display:flex;flex-direction:column;gap:.15rem}
 .r-subj{font-weight:600;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .r-sub{font-size:.85rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.r-st{grid-area:st;display:flex;gap:.35rem;flex-wrap:wrap;align-items:center}
+.r-st{grid-area:st;display:flex;gap:.35rem .6rem;flex-wrap:wrap;align-items:center}
+.r-own{font-size:.86rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r-own b{color:var(--fg);font-weight:500}
 .r-meta{grid-area:meta;display:flex;flex-wrap:wrap;gap:.25rem 1rem;font-size:.86rem;color:var(--muted);align-items:center}
 .r-who{display:inline-flex;flex-wrap:wrap;gap:0 .45rem;min-width:0}
 .r-who b{color:var(--fg);font-weight:600}
-.r-k{font:600 .68rem/1 var(--f-display);letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-right:.35rem}
 .r-who small{font-size:inherit}
+.r-k{font:600 .68rem/1 var(--f-display);letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-right:.35rem}
 .lmore{padding:.8rem;display:flex;justify-content:center;border-top:1px solid var(--line2)}
 .lempty{padding:1.6rem 1.2rem;color:var(--muted);line-height:1.5}
 .lempty strong{display:block;color:var(--fg);font:700 1.15rem/1.2 var(--f-display);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.3rem}
 @media (min-width:900px){
-  .lhead,.req{grid-template-columns:4.4rem minmax(0,1fr) 12rem 11.5rem 8.6rem 8rem;grid-template-areas:"id main who st due own";align-items:center;column-gap:1rem}
+  .lhead,.req{grid-template-columns:4.8rem minmax(0,1fr) 11rem 11.5rem 8.4rem 10rem;grid-template-areas:"id main who st due res";align-items:center;column-gap:1rem}
   .lhead{display:grid;padding:.6rem .95rem .55rem 1.1rem;border-bottom:1px solid var(--line);background:var(--sunk);font:600 .7rem/1 var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
   .req{padding-block:.7rem}
   .r-meta{display:contents}
   .r-who{grid-area:who;display:flex;flex-direction:column;gap:0;font-size:.88rem}
   .r-who>*{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .r-due{grid-area:due;font-size:.88rem}
-  .r-own{grid-area:own;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--fg)}
+  .r-res{grid-area:res;font-size:.88rem}
   .r-st{flex-direction:column;align-items:flex-start;gap:.3rem}
-  .r-k{display:none}
+  .r-st .r-k{display:none}
 }
 
 /* ───────── cards / forms ───────── */
 .card{background:var(--panel);border:1px solid var(--line);border-radius:.6rem;padding:1.1rem;display:flex;flex-direction:column;gap:.9rem}
 .card h3{font:700 1.05rem/1.2 var(--f-display);text-transform:uppercase;letter-spacing:.08em}
 .card>p{margin:0;color:var(--muted);font-size:.92rem;line-height:1.45;max-width:65ch}
-.form{max-width:780px}
-.done{max-width:780px;border-color:var(--ok);background:var(--ok-bg)}
+.form{max-width:900px}
+.done{max-width:900px;border-color:var(--ok);background:var(--ok-bg)}
 .done .big{font:700 1.6rem/1.15 var(--f-display);text-transform:uppercase;letter-spacing:.03em}
 .settings{display:grid;grid-template-columns:1fr;gap:1rem;max-width:880px}
 .people{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:.45rem;overflow:hidden}
@@ -209,29 +228,58 @@ select.inp{appearance:auto}
 .role-chip.admin{background:var(--fg);color:var(--bg)}
 .role-chip.customer{background:var(--info-bg);color:var(--fg)}
 
-/* ───────── request drawer ───────── */
+/* ───────── line editors (what to count / what was counted) ───────── */
+.le{display:flex;flex-direction:column;gap:.5rem}
+.le-head{display:none}
+.le-row{display:grid;gap:.45rem .5rem;grid-template-columns:repeat(3,minmax(0,1fr));padding:.6rem;border:1px solid var(--line);border-radius:.5rem;background:var(--sunk)}
+.le.cust .le-row{grid-template-areas:"product product product" "bin batch uom" "book book x"}
+.le.res .le-row{grid-template-areas:"product product product" "bin batch uom" "book counted diff" "note note note" "recount recount x"}
+.le.res .le-row.is-off{border-color:var(--bad)}
+.cell{display:flex;flex-direction:column;gap:.2rem;min-width:0}
+.cl{font:600 .66rem/1.1 var(--f-display);letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+.le-row .inp{min-height:2.5rem;padding:.4rem .55rem}
+.le-row output{display:flex;align-items:center;min-height:2.5rem;font-weight:700;font-variant-numeric:tabular-nums}
+.le-row output.zero{font-weight:400;color:var(--muted)}
+.le-row output.off{color:var(--bad)}
+.le-row .rc{align-self:center;font-size:.9rem}
+.le-x{grid-area:x;align-self:end;justify-self:end;width:2.5rem;height:2.5rem;border:1px solid var(--line);background:var(--panel);border-radius:.4rem;cursor:pointer;font-size:1.25rem;line-height:1;color:var(--muted)}
+.le-x:hover{color:var(--bad);border-color:var(--bad)}
+.paste{display:flex;flex-direction:column;gap:.5rem;background:var(--sunk);border:1px dashed var(--line);border-radius:.5rem;padding:.75rem}
+.paste textarea.inp{min-height:6rem;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14px}
+@media (min-width:700px){
+  .le-head{display:grid;gap:.5rem;padding:0 .6rem;font:600 .68rem/1.1 var(--f-display);letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+  .le.cust .le-head,.le.cust .le-row{grid-template-columns:minmax(0,2fr) minmax(0,1.5fr) minmax(0,1.2fr) minmax(0,.8fr) minmax(0,1.1fr) 2.5rem;grid-template-areas:"product bin batch uom book x"}
+  .le.cust .le-row{background:none;border:0;padding:0}
+  .le.res .le-head,.le.res .le-row{grid-template-columns:minmax(0,1.8fr) minmax(0,1.3fr) minmax(0,1.1fr) minmax(0,.7fr) minmax(0,1fr) minmax(0,1fr) minmax(0,.8fr) 2.5rem}
+  .le.res .le-row{grid-template-areas:"product bin batch uom book counted diff x" "note note note note note recount recount recount"}
+  .le .le-row .cl{display:none}
+  .le-x{align-self:center}
+}
+
+/* ───────── drawer ───────── */
 .drawer{position:fixed;inset:0;z-index:20;background:var(--scrim);display:flex;justify-content:flex-end}
-.d-card{width:min(760px,100%);height:100%;overflow:auto;overscroll-behavior:contain;background:var(--panel);box-shadow:var(--shadow);display:flex;flex-direction:column;animation:slide .2s ease-out}
+.d-card{width:min(820px,100%);height:100%;overflow:auto;overscroll-behavior:contain;background:var(--panel);box-shadow:var(--shadow);display:flex;flex-direction:column;animation:slide .2s ease-out}
 .d-top{position:sticky;top:0;z-index:2;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:.6rem;padding:.7rem max(16px,env(safe-area-inset-right,0px)) .7rem 1.25rem}
 .d-id{font:700 1.25rem/1 var(--f-display);letter-spacing:.03em;color:var(--muted);font-variant-numeric:tabular-nums}
 .d-top .sp{flex:1}
 .d-body{padding:1rem max(16px,env(safe-area-inset-right,0px)) calc(2rem + env(safe-area-inset-bottom,0px)) 1.25rem;display:flex;flex-direction:column;gap:1.1rem}
 .d-title{font:700 1.6rem/1.15 var(--f-display);letter-spacing:.01em;outline:none}
-.banner{border-radius:.5rem;padding:.75rem .9rem;line-height:1.45;font-size:.95rem}
-.banner b{display:block;font:700 .8rem/1.2 var(--f-display);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.2rem}
-.banner.ok{background:var(--ok-bg)}
-.banner.ok b{color:var(--ok)}
-.banner.warn{background:var(--warn-bg)}
-.banner.warn b{color:var(--warn)}
-.banner.bad{background:var(--bad-bg)}
-.banner.bad b{color:var(--bad)}
+.banner{border-radius:.5rem;padding:.75rem .9rem;line-height:1.45;font-size:.95rem;display:flex;flex-direction:column;gap:.45rem}
+.banner b{display:block;font:700 .8rem/1.2 var(--f-display);letter-spacing:.12em;text-transform:uppercase}
+.banner.ok{background:var(--ok-bg)} .banner.ok b{color:var(--ok)}
+.banner.warn{background:var(--warn-bg)} .banner.warn b{color:var(--warn)}
+.banner.bad{background:var(--bad-bg)} .banner.bad b{color:var(--bad)}
+.banner.info{background:var(--info-bg)}
 .banner .pre{white-space:pre-wrap;overflow-wrap:anywhere}
+.banner textarea.inp{min-height:5rem;background:var(--panel)}
 dl.facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(10.5rem,1fr));gap:.8rem 1rem;margin:0}
 dl.facts dt{font:600 .7rem/1.1 var(--f-display);letter-spacing:.13em;text-transform:uppercase;color:var(--faint);margin-bottom:.25rem}
 dl.facts dd{margin:0;font-size:.94rem;overflow-wrap:anywhere}
 dl.facts a{color:var(--focus)}
 .d-sec{display:flex;flex-direction:column;gap:.6rem}
-.d-sec>h3{font:700 .9rem/1.2 var(--f-display);text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.d-sec>h3,.d-h3{font:700 .9rem/1.2 var(--f-display);text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.sumline{display:flex;flex-wrap:wrap;gap:.3rem 1.1rem;font-size:.92rem;color:var(--muted)}
+.sumline b{color:var(--fg)}
 .pre{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5}
 .mbox{background:var(--sunk);border:1px solid var(--line);border-radius:.6rem;padding:1rem;display:flex;flex-direction:column;gap:.8rem}
 .thread{display:flex;flex-direction:column;gap:.55rem}
@@ -260,8 +308,8 @@ dl.facts a{color:var(--focus)}
 .kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem}
 .kpis .tile.hero{grid-column:1/-1}
 .kpis .tile:not(.hero):last-child:nth-child(even){grid-column:1/-1}
-@media (min-width:700px){.kpis{grid-template-columns:repeat(var(--n,5),minmax(0,1fr))}.kpis .tile:not(.hero):last-child:nth-child(even){grid-column:auto}}
-@media (min-width:1100px){.kpis{grid-template-columns:minmax(0,1.7fr) repeat(var(--n,5),minmax(0,1fr))}.kpis .tile.hero{grid-column:auto}}
+@media (min-width:700px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.kpis .tile:not(.hero):last-child:nth-child(even){grid-column:auto}}
+@media (min-width:1100px){.kpis{grid-template-columns:minmax(0,1.6fr) repeat(var(--n,6),minmax(0,1fr))}.kpis .tile.hero{grid-column:auto}}
 .tile{background:var(--panel);border:1px solid var(--line);border-radius:.6rem;padding:.85rem 1rem;min-width:0}
 .tile .l{font-size:.86rem;color:var(--muted);line-height:1.25}
 .tile .v{font:600 2rem/1.1 var(--f-body);margin-top:.3rem;white-space:nowrap}
@@ -288,15 +336,16 @@ dl.facts a{color:var(--focus)}
 .chart .el{fill:var(--fg);font:600 12px var(--f-body)}
 .chart .xh{stroke:var(--muted);stroke-width:1}
 .hbars{display:flex;flex-direction:column;gap:.25rem}
-.hb{display:grid;grid-template-columns:minmax(6.5rem,38%) minmax(0,1fr);align-items:center;gap:.7rem;padding:.2rem .3rem;border-radius:.3rem;outline-offset:0}
+.hb{display:grid;grid-template-columns:minmax(6.5rem,38%) minmax(0,1fr);align-items:center;gap:.7rem;padding:.2rem .3rem;border-radius:.3rem}
 .hb:hover,.hb:focus-visible{background:var(--sunk)}
 .hb-l{font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hb-t{display:flex;align-items:center;gap:.45rem;min-width:0}
-.hb-b{height:16px;flex:none;width:calc((100% - 2.8rem) * var(--f));background:var(--s1);border-radius:0 4px 4px 0}
+.hb-b{height:16px;flex:none;width:calc((100% - 4.2rem) * var(--f));background:var(--s1);border-radius:0 4px 4px 0}
 .hb:hover .hb-b,.hb:focus-visible .hb-b{filter:brightness(1.12)}
-.hb-v{font-size:.88rem;font-weight:600;font-variant-numeric:tabular-nums}
+.hb-v{font-size:.88rem;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
 .seg{display:flex;gap:2px;height:28px}
-.sg{min-width:2px;border-radius:4px;display:flex;align-items:center;padding:0 .5rem;color:#fff;font:700 .85rem/1 var(--f-body);overflow:visible;cursor:default}
+.sg{min-width:2px;border-radius:4px;display:flex;align-items:center;padding:0 .5rem;color:#fff;font:700 .85rem/1 var(--f-body);cursor:default}
+.sg.dark-ink{color:#0b0b0b}
 .sg:hover,.sg:focus-visible{filter:brightness(1.12)}
 .sg b{font-weight:700;white-space:nowrap}
 .cempty{color:var(--muted);font-size:.92rem;padding:.6rem 0}
@@ -308,6 +357,8 @@ table.t th,table.t td{padding:.45rem .55rem;border-bottom:1px solid var(--line2)
 table.t th{font:600 .7rem/1.1 var(--f-display);letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
 table.t .n{text-align:right;font-variant-numeric:tabular-nums}
 table.t td.late{color:var(--bad);font-weight:600}
+table.t td.tw{white-space:normal;min-width:10rem}
+table.t tr.off td{background:var(--bad-bg)}
 .tip{position:fixed;z-index:40;pointer-events:none;background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:.45rem;box-shadow:var(--shadow);padding:.5rem .7rem;font-size:.85rem;min-width:8rem;max-width:18rem}
 .tip .tl{color:var(--muted);font-size:.78rem;margin-bottom:.3rem}
 .tip .tr{display:flex;align-items:center;gap:.5rem;line-height:1.5}
@@ -337,17 +388,17 @@ table.t td.late{color:var(--bad);font-weight:600}
 .demo-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 1rem);z-index:15;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:.5rem .7rem;background:var(--high);color:var(--on-high);font:700 .85rem/1.2 var(--f-display);letter-spacing:.06em;text-transform:uppercase;padding:.5rem .6rem .5rem .9rem;border-radius:.4rem;box-shadow:0 6px 20px rgba(0,0,0,.3);width:max-content;max-width:calc(100% - 24px)}
 .demo-bar .segm{background:rgba(255,255,255,.35);border-color:rgba(0,0,0,.25)}
 .demo-bar .segm span{min-height:2.2rem;color:var(--on-high);font-size:.85rem;padding:0 .7rem;white-space:nowrap}
-@media (max-width:560px){.demo-bar{padding:.45rem .5rem;gap:.4rem .5rem;font-size:.78rem}.demo-bar>span{width:100%;text-align:center}}
 .demo-bar .segm label+label span{border-left-color:rgba(0,0,0,.25)}
 .demo-bar .segm input:checked+span{background:var(--on-high);color:var(--high)}
 .demo-bar button{background:var(--on-high);color:var(--high);border:0;border-radius:.25rem;font:700 .8rem/1 var(--f-display);letter-spacing:.08em;text-transform:uppercase;padding:.6rem .75rem;cursor:pointer}
+@media (max-width:560px){.demo-bar{padding:.45rem .5rem;gap:.4rem .5rem;font-size:.78rem}.demo-bar>span{width:100%;text-align:center}}
 .toast{position:fixed;left:50%;bottom:calc(1.2rem + env(safe-area-inset-bottom,0px));--tx:-50%;transform:translateX(-50%);z-index:50;background:var(--toast);color:var(--on-toast);padding:.75rem 1.1rem;border-radius:.45rem;font:600 .95rem/1.3 var(--f-body);box-shadow:0 8px 24px rgba(0,0,0,.3);max-width:calc(100% - 32px);animation:up .18s ease-out}
 body.demo .toast{bottom:calc(5.2rem + env(safe-area-inset-bottom,0px))}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
 /* ───────── print (dashboard for reviews) ───────── */
 @media print{
-  :root:not(#_print){--bg:#fff;--panel:#fff;--sunk:#f4f7fb;--line:#d2dbe8;--line2:#e6ebf2;--fg:#0b1a33;--muted:#4f6383;--faint:#6b7c97;--grid:#e6ebf2;--axis:#b8c4d6;--s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#6250d6;--ok:#17703f;--bad:#c80f0b;color-scheme:light}
+  :root:not(#_print){--bg:#fff;--panel:#fff;--sunk:#f4f7fb;--line:#d2dbe8;--line2:#e6ebf2;--fg:#0b1a33;--muted:#4f6383;--faint:#6b7c97;--grid:#e6ebf2;--axis:#b8c4d6;--s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--s5:#e87ba4;--done:#008300;--ok:#17703f;--bad:#c80f0b;color-scheme:light}
   body{background:#fff}
   .nav,.demo-bar,.toast,.tip,.no-print,.filters{display:none!important}
   .print-only{display:block;color:var(--muted);font-size:.9rem}
@@ -366,12 +417,12 @@ body.demo .toast{bottom:calc(5.2rem + env(safe-area-inset-bottom,0px))}
   <div class="gate-card">
     <div class="gate-head"><img src="../assets/ceva-logo-white.svg" alt="CEVA Logistics"></div>
     <div class="gate-body">
-      <h1 class="gate-title" id="gTitle">Customer Requests</h1>
+      <h1 class="gate-title" id="gTitle">Cycle Counts</h1>
       <p class="gate-p" id="gWait">Connecting…</p>
-      <p class="gate-p" id="gSetup" hidden>This portal isn’t connected to its database yet. Add the Firebase web config to <code>requests/firebase-config.js</code> in the repository.</p>
+      <p class="gate-p" id="gSetup" hidden>This portal isn’t connected to its database yet. Add the Firebase web config to <code>cycle-counts/firebase-config.js</code> in the repository.</p>
 
       <form id="gLogin" novalidate hidden>
-        <p class="gate-p">Sign in to submit requests to CEVA and follow them through to closed.</p>
+        <p class="gate-p">Sign in to request cycle counts from CEVA and see the results.</p>
         <div class="fld"><label for="lEmail">Email</label><input class="inp" id="lEmail" type="email" autocomplete="username" inputmode="email"></div>
         <div class="fld"><label for="lPass">Password</label><input class="inp" id="lPass" type="password" autocomplete="current-password"></div>
         <div class="err" id="lErr" role="alert" hidden></div>
@@ -414,7 +465,7 @@ body.demo .toast{bottom:calc(5.2rem + env(safe-area-inset-bottom,0px))}
         <div class="row-btns" style="margin-top:.9rem"><button type="button" class="btn ghost" id="pOut">Sign out</button></div>
       </div>
 
-      <div class="gate-alt"><button type="button" class="btn ghost" id="gDemo">Preview with example requests</button></div>
+      <div class="gate-alt"><button type="button" class="btn ghost" id="gDemo">Preview with example counts</button></div>
     </div>
   </div>
 </section>
@@ -423,68 +474,84 @@ body.demo .toast{bottom:calc(5.2rem + env(safe-area-inset-bottom,0px))}
 <div id="main" hidden>
   <header class="top gut">
     <img class="logo" src="../assets/ceva-logo-white.svg" alt="CEVA Logistics">
-    <div class="t-title"><div class="t-eb" id="tEb"></div><div class="t-main" id="tMain">Customer Requests</div></div>
+    <div class="t-title"><div class="t-eb" id="tEb"></div><div class="t-main" id="tMain">Cycle Counts</div></div>
     <div class="t-right"><span class="dot" id="tDot"></span><span id="tConn">Connecting…</span><span aria-hidden="true">·</span><span class="who" id="tWho"></span></div>
   </header>
   <div class="rule"></div>
   <nav class="nav gut" aria-label="Sections">
     <div class="nav-in">
       <div class="tabs">
-        <a class="tab" href="#list" data-v="list">Requests <span class="n" id="nOpen">0</span></a>
+        <a class="tab" href="#list" data-v="list">Counts <span class="n" id="nOpen">0</span></a>
         <a class="tab" href="#dash" data-v="dash">Dashboard</a>
         <a class="tab" href="#settings" data-v="settings">Settings</a>
       </div>
-      <a class="btn primary" href="#new" id="btnNew">New request</a>
+      <a class="btn primary" href="#new" id="btnNew">Request a count</a>
     </div>
   </nav>
 
   <main class="wrap gut">
-    <!-- REQUESTS -->
+    <!-- COUNTS -->
     <section class="view" id="v-list" aria-labelledby="hList" hidden>
-      <div class="v-head"><div><h2 id="hList">Requests</h2><p id="listLead"></p></div><span class="sp"></span><button type="button" class="btn ghost sm" id="btnCsv">Download CSV</button></div>
+      <div class="v-head"><div><h2 id="hList">Cycle counts</h2><p id="listLead"></p></div><span class="sp"></span><button type="button" class="btn ghost sm" id="btnCsv">Download results (CSV)</button></div>
       <div class="filters">
         <div class="fchips" id="fChips" role="group" aria-label="Show"></div>
         <select class="inp" id="fAcct" aria-label="Customer account" hidden></select>
-        <input class="inp search" id="fQ" type="search" placeholder="Search number, subject, PO, SKU, person…" aria-label="Search requests" autocomplete="off">
+        <input class="inp search" id="fQ" type="search" placeholder="Search count no., product, storage bin, batch, PI doc…" aria-label="Search counts" autocomplete="off">
       </div>
       <div class="list" id="list"></div>
     </section>
 
-    <!-- NEW REQUEST -->
+    <!-- NEW COUNT REQUEST -->
     <section class="view" id="v-new" aria-labelledby="hNew" hidden>
       <form class="card form" id="nForm" novalidate>
-        <div><h2 id="hNew" style="font:700 1.5rem/1.1 var(--f-display);text-transform:uppercase;letter-spacing:.03em">New request</h2>
-          <p class="hint" style="margin-top:.3rem" id="nLead">Tell us what you need. You’ll get a request number and can follow it here until it’s closed.</p></div>
+        <div><h2 id="hNew" style="font:700 1.5rem/1.1 var(--f-display);text-transform:uppercase;letter-spacing:.03em">Request a cycle count</h2>
+          <p class="hint" style="margin-top:.3rem" id="nLead"></p></div>
         <div id="nStaff" class="mbox" hidden>
-          <p class="hint" style="margin:0">Logging a request for a customer (from a call or email). It shows on their tracker like any other.</p>
+          <p class="hint" style="margin:0">Logging a count for a customer (from a call or email). It shows on their list like any other.</p>
           <div class="fld"><label for="nAcct">Customer account</label><input class="inp" id="nAcct" maxlength="60" list="acctList" autocomplete="off"></div>
           <div class="grid2">
             <div class="fld"><label for="nWho">Requested by</label><input class="inp" id="nWho" maxlength="60" autocomplete="off" placeholder="Customer contact name"></div>
             <div class="fld"><label for="nWhoEmail">Their email (optional)</label><input class="inp" id="nWhoEmail" type="email" maxlength="120" autocomplete="off"></div>
           </div>
         </div>
-        <div class="fld"><label for="nCat">Request type</label><select class="inp" id="nCat"></select></div>
-        <div class="fld"><span class="lab" id="lblNPrio">Priority</span>
-          <div class="segm prio" role="radiogroup" aria-labelledby="lblNPrio">
-            <label><input type="radio" name="nPrio" value="normal" checked><span>Standard</span></label>
-            <label><input type="radio" name="nPrio" value="high"><span>High</span></label>
-            <label><input type="radio" name="nPrio" value="urgent"><span>Urgent</span></label>
-          </div>
-          <p class="hint" id="nPrioHint"></p>
-        </div>
-        <div class="fld"><label for="nSubj">Subject</label><input class="inp" id="nSubj" maxlength="120" autocomplete="off" placeholder="Expedite PO 4500021187 to ship today"></div>
-        <div class="fld"><label for="nDetails">Details</label><textarea class="inp" id="nDetails" maxlength="4000" placeholder="What happened, what you need us to do, and anything we should know (quantities, locations, contacts)."></textarea></div>
         <div class="grid2">
-          <div class="fld"><label for="nRefs">Order, PO, SKU or tracking numbers</label><input class="inp" id="nRefs" maxlength="300" autocomplete="off" placeholder="PO 4500021187, SKU 30214"></div>
-          <div class="fld"><label for="nNeed">Needed by (optional)</label><input class="inp" id="nNeed" type="date"></div>
+          <div class="fld"><label for="nReason">Why the count</label><select class="inp" id="nReason"></select></div>
+          <div class="fld"><span class="lab" id="lblNPrio">Priority</span>
+            <div class="segm prio" role="radiogroup" aria-labelledby="lblNPrio">
+              <label><input type="radio" name="nPrio" value="normal" checked><span>Standard</span></label>
+              <label><input type="radio" name="nPrio" value="high"><span>High</span></label>
+              <label><input type="radio" name="nPrio" value="urgent"><span>Urgent</span></label>
+            </div>
+          </div>
+        </div>
+        <p class="hint" id="nPrioHint" style="margin-top:-.4rem"></p>
+        <div class="fld">
+          <span class="lab" id="lblLines">What to count</span>
+          <p class="hint">One line per product. Storage bin and batch are optional: leave the bin blank to count every bin the product is in. Book qty is what EWM shows today, if you have it.</p>
+          <div class="le cust" id="nLines" role="group" aria-labelledby="lblLines"></div>
+          <div class="row-btns"><button type="button" class="btn sm" id="nAdd">Add line</button><button type="button" class="btn sm ghost" id="nPasteBtn">Paste from EWM or Excel</button><span class="hint" id="nCount"></span></div>
+          <div class="paste" id="nPasteBox" hidden>
+            <label for="nPaste" class="hint" style="color:var(--fg)">Copy rows from an EWM stock overview export or any spreadsheet and paste them here. With a header row (Product, Storage Bin, Batch, Quantity, BUn) columns are matched by name; without one the order is product, storage bin, batch, qty, UoM.</label>
+            <textarea class="inp" id="nPaste" spellcheck="false" placeholder="Product&#9;Storage Bin&#9;Batch&#9;Quantity&#9;BUn&#10;NW104233&#9;A-12-03&#9;&#9;120&#9;EA"></textarea>
+            <div class="row-btns"><button type="button" class="btn primary sm" id="nPasteGo">Add these lines</button><button type="button" class="btn ghost sm" id="nPasteX">Cancel</button></div>
+          </div>
+        </div>
+        <div class="fld"><label for="nDetails">Notes (optional)</label><textarea class="inp" id="nDetails" maxlength="4000" style="min-height:5rem" placeholder="What prompted the count, what to look for, who to call with questions."></textarea></div>
+        <div class="grid2">
+          <div class="fld"><label for="nSubj">Title (optional)</label><input class="inp" id="nSubj" maxlength="120" autocomplete="off" placeholder="Made from the products if left blank"></div>
+          <div class="fld"><label for="nNeed">Results needed by (optional)</label><input class="inp" id="nNeed" type="date"></div>
+        </div>
+        <div class="grid2">
+          <div class="fld"><label for="nPi">EWM PI document (optional)</label><input class="inp" id="nPi" maxlength="60" autocomplete="off" placeholder="If you already created one"></div>
+          <div class="fld"><label for="nRefs">Reference (optional)</label><input class="inp" id="nRefs" maxlength="300" autocomplete="off" placeholder="Order, delivery or ticket number"></div>
         </div>
         <div class="err" id="nErr" role="alert" hidden></div>
-        <div class="row-btns"><button type="submit" class="btn primary" id="nGo">Submit request</button><a class="btn ghost" href="#list">Cancel</a></div>
+        <div class="row-btns"><button type="submit" class="btn primary" id="nGo">Submit count request</button><a class="btn ghost" href="#list">Cancel</a></div>
       </form>
       <div class="card done" id="nDone" hidden role="status">
         <div class="big" id="nDoneT"></div>
         <p class="hint" style="color:var(--fg)" id="nDoneP"></p>
-        <div class="row-btns"><a class="btn primary" id="nDoneView" href="#list">View request</a><button type="button" class="btn ghost" id="nAgain">Submit another</button></div>
+        <div class="row-btns"><a class="btn primary" id="nDoneView" href="#list">View count</a><button type="button" class="btn ghost" id="nAgain">Request another</button></div>
       </div>
     </section>
 
@@ -502,25 +569,34 @@ body.demo .toast{bottom:calc(5.2rem + env(safe-area-inset-bottom,0px))}
       </div>
       <div class="kpis" id="kpis"></div>
       <div class="dgrid">
-        <section class="cc span2" aria-labelledby="hTrend">
-          <div><h3 id="hTrend">Submitted and closed</h3><div class="sub" id="trendSub"></div></div>
+        <section class="cc" aria-labelledby="hTrend">
+          <div><h3 id="hTrend">Requested and completed</h3><div class="sub" id="trendSub"></div></div>
           <div class="legend" id="trendLegend"></div>
           <div class="chart" id="cTrend"></div>
           <details class="nums"><summary>Show the numbers</summary><div class="tscroll" id="tTrend"></div></details>
         </section>
+        <section class="cc" aria-labelledby="hAcc">
+          <div><h3 id="hAcc">Line accuracy</h3><div class="sub" id="accSub"></div></div>
+          <div class="chart" id="cAcc"></div>
+          <details class="nums"><summary>Show the numbers</summary><div class="tscroll" id="tAcc"></div></details>
+        </section>
         <section class="cc" aria-labelledby="hStatus">
-          <div><h3 id="hStatus">Open now by status</h3><div class="sub" id="statusSub"></div></div>
+          <div><h3 id="hStatus">Open counts by status</h3><div class="sub" id="statusSub"></div></div>
           <div class="chart" id="cStatus"></div>
           <div class="legend" id="statusLegend"></div>
         </section>
         <section class="cc" aria-labelledby="hAge">
-          <div><h3 id="hAge">Open now by age</h3><div class="sub">How long open requests have been waiting</div></div>
+          <div><h3 id="hAge">Open counts by age</h3><div class="sub">How long open counts have been waiting</div></div>
           <div class="chart" id="cAge"></div>
         </section>
-        <section class="cc span2" aria-labelledby="hType">
-          <div><h3 id="hType">Requests by type</h3><div class="sub" id="typeSub"></div></div>
-          <div class="chart" id="cType"></div>
-          <details class="nums"><summary>Show the numbers</summary><div class="tscroll" id="tType"></div></details>
+        <section class="cc" aria-labelledby="hVar">
+          <div><h3 id="hVar">Largest differences by product</h3><div class="sub" id="varSub"></div></div>
+          <div class="chart" id="cVar"></div>
+          <details class="nums"><summary>Show the numbers</summary><div class="tscroll" id="tVar"></div></details>
+        </section>
+        <section class="cc" aria-labelledby="hReason">
+          <div><h3 id="hReason">Counts by reason</h3><div class="sub" id="reasonSub"></div></div>
+          <div class="chart" id="cReason"></div>
         </section>
         <section class="cc span2" id="ccAcct" aria-labelledby="hAcct" hidden>
           <div><h3 id="hAcct">By customer account</h3><div class="sub" id="acctSub"></div></div>
@@ -540,30 +616,31 @@ body.demo .toast{bottom:calc(5.2rem + env(safe-area-inset-bottom,0px))}
         </div>
         <div class="card" id="setAlerts" hidden>
           <h3>New request alerts</h3>
-          <p>While this page is open, new customer requests pop up here. Turn this on to also get a desktop notification when the tab is in the background.</p>
+          <p>While this page is open, new count requests pop up here. Turn this on to also get a desktop notification when the tab is in the background.</p>
           <label class="check"><input type="checkbox" id="sAlerts"><span>Desktop notifications on this computer</span></label>
         </div>
         <form class="card" id="setPortal" novalidate hidden>
           <h3>Portal</h3>
           <p>Only admins see this section. Changes apply to every customer and CEVA user.</p>
-          <div class="fld"><label for="sName">Portal name (shown in the header)</label><input class="inp" id="sName" maxlength="60" placeholder="Atlanta Campus · Customer Requests"></div>
-          <div class="fld"><label for="sTypes">Request types, one per line</label><textarea class="inp" id="sTypes" style="min-height:12rem"></textarea></div>
-          <div class="fld"><span class="lab">Close-time targets, in hours from submit</span>
+          <div class="fld"><label for="sName">Portal name (shown in the header)</label><input class="inp" id="sName" maxlength="60" placeholder="Atlanta Campus · Cycle Counts"></div>
+          <div class="fld"><label for="sReasons">Count reasons, one per line</label><textarea class="inp" id="sReasons" style="min-height:11rem"></textarea></div>
+          <div class="fld"><span class="lab">Results due, in hours from the request</span>
             <div class="grid3">
               <div class="fld"><label for="sTU">Urgent</label><input class="inp" id="sTU" type="number" min="1" max="2000" inputmode="numeric"></div>
               <div class="fld"><label for="sTH">High</label><input class="inp" id="sTH" type="number" min="1" max="2000" inputmode="numeric"></div>
               <div class="fld"><label for="sTN">Standard</label><input class="inp" id="sTN" type="number" min="1" max="2000" inputmode="numeric"></div>
             </div>
-            <p class="hint">A “needed by” date on a request replaces its target. Calendar hours; time waiting on the customer still counts.</p>
+            <p class="hint">“On time” means results were posted by then. A results-needed-by date on a request replaces its target. Calendar hours.</p>
           </div>
+          <label class="check"><input type="checkbox" id="sApprove"><span>Customers approve any difference before it’s posted in EWM (counts with no difference complete on their own)</span></label>
           <label class="check"><input type="checkbox" id="sShow"><span>Show targets, overdue counts and on-time rate to customers</span></label>
-          <div class="fld"><label for="sOwners">CEVA owners, one per line (suggested when assigning)</label><textarea class="inp" id="sOwners" placeholder="K. Bell&#10;A. Ortiz"></textarea></div>
+          <div class="fld"><label for="sOwners">CEVA counters and owners, one per line (suggested when assigning)</label><textarea class="inp" id="sOwners" placeholder="K. Bell&#10;A. Ortiz"></textarea></div>
           <div class="err" id="sErr" role="alert" hidden></div>
           <div class="row-btns"><button type="submit" class="btn primary">Save portal settings</button></div>
         </form>
         <div class="card" id="setPeople" hidden>
           <h3>People</h3>
-          <p>Customers create their own account from the sign-in page and show up under “Waiting for access”. Approve each one into their company’s account; they only ever see that account’s requests.</p>
+          <p>Customers create their own account from the sign-in page and show up under “Waiting for access”. Approve each one into their company’s account; they only ever see that account’s counts.</p>
           <div class="fld"><span class="lab">Waiting for access</span><div class="people" id="accessList"></div></div>
           <div class="fld"><span class="lab">Everyone with access</span><div class="people" id="peopleList"></div></div>
           <details id="addPerson"><summary style="cursor:pointer;font-weight:600">Add or change someone by user ID</summary>
@@ -588,42 +665,74 @@ body.demo .toast{bottom:calc(5.2rem + env(safe-area-inset-bottom,0px))}
         </div>
         <div class="card" id="setPreview">
           <h3>Preview</h3>
-          <p>Click through the portal with example customers and requests, as a customer or as the CEVA team. Nothing is saved and real data is untouched.</p>
-          <div class="row-btns"><button type="button" class="btn" id="sDemo">Preview with example requests</button></div>
+          <p>Click through the portal with example customers and counts, as a customer or as the CEVA team. Nothing is saved and real data is untouched.</p>
+          <div class="row-btns"><button type="button" class="btn" id="sDemo">Preview with example counts</button></div>
         </div>
       </div>
     </section>
   </main>
 </div>
 
-<!-- REQUEST DRAWER -->
+<!-- COUNT DRAWER -->
 <div class="drawer" id="drawer" hidden>
   <div class="d-card" role="dialog" aria-modal="true" aria-labelledby="dTitle">
     <div class="d-top"><span class="d-id" id="dId"></span><span id="dChips"></span><span class="sp"></span><button type="button" class="btn ghost sm" id="dClose">Close</button></div>
     <div class="d-body">
       <h2 class="d-title" id="dTitle" tabindex="-1"></h2>
       <div id="dBanner"></div>
+
+      <div class="banner warn" id="dDecide" hidden>
+        <b>Your approval is needed</b>
+        <span id="dDecideSum"></span>
+        <div class="row-btns"><button type="button" class="btn primary" id="dApprove">Approve difference</button><button type="button" class="btn" id="dRecountBtn">Ask for a recount</button></div>
+        <div id="dRecountBox" hidden style="display:flex;flex-direction:column;gap:.5rem">
+          <label for="dRecountText" class="hint" style="color:var(--fg)">What looks wrong? CEVA sees this with the recount request.</label>
+          <textarea class="inp" id="dRecountText" maxlength="2000" placeholder="EWM shows 120 EA in A-12-03. Please recount that bin and check overflow."></textarea>
+          <div class="row-btns"><button type="button" class="btn primary" id="dRecountGo">Send recount request</button><button type="button" class="btn ghost" id="dRecountX">Cancel</button></div>
+        </div>
+      </div>
+
       <dl class="facts" id="dFacts"></dl>
-      <div class="d-sec" id="dDetailsSec"><h3>Details</h3><div class="pre" id="dDetails"></div></div>
+      <div class="d-sec" id="dDetailsSec"><h3>Notes</h3><div class="pre" id="dDetails"></div></div>
+
+      <div class="d-sec">
+        <h3 id="dCountH">Count</h3>
+        <div class="sumline" id="dSum"></div>
+        <div class="tscroll" id="dTable"></div>
+        <form id="rForm" class="d-sec" novalidate hidden>
+          <p class="hint" id="rLead"></p>
+          <div class="le res" id="rLines"></div>
+          <div class="row-btns"><button type="button" class="btn sm" id="rAdd">Add a row (product found in another bin)</button></div>
+          <div class="sumline" id="rSum"></div>
+          <div class="err" id="rErr" role="alert" hidden></div>
+          <div class="row-btns"><button type="submit" class="btn primary" id="rPost">Post results</button><button type="button" class="btn" id="rSave">Save counts so far</button><button type="button" class="btn ghost" id="rUndo">Undo edits</button></div>
+        </form>
+      </div>
 
       <form class="mbox" id="mForm" novalidate hidden>
-        <h3 style="font:700 .9rem/1.2 var(--f-display);text-transform:uppercase;letter-spacing:.12em;color:var(--muted)">Manage · CEVA only</h3>
+        <h3 class="d-h3">Manage · CEVA only</h3>
         <div class="fld"><span class="lab" id="lblMSt">Status</span>
-          <div class="segm st4" role="radiogroup" aria-labelledby="lblMSt">
-            <label><input type="radio" name="mSt" value="new"><span>New</span></label>
-            <label><input type="radio" name="mSt" value="in_progress"><span>In progress</span></label>
-            <label><input type="radio" name="mSt" value="waiting"><span>Waiting on customer</span></label>
-            <label><input type="radio" name="mSt" value="closed"><span>Closed</span></label>
+          <div class="segm st6" role="radiogroup" aria-labelledby="lblMSt">
+            <label><input type="radio" name="mSt" value="new"><span>Requested</span></label>
+            <label><input type="radio" name="mSt" value="scheduled"><span>Scheduled</span></label>
+            <label><input type="radio" name="mSt" value="counting"><span>Counting</span></label>
+            <label><input type="radio" name="mSt" value="review"><span>Awaiting approval</span></label>
+            <label><input type="radio" name="mSt" value="approved"><span>Approved</span></label>
+            <label><input type="radio" name="mSt" value="closed"><span>Completed</span></label>
           </div>
         </div>
-        <div class="fld" id="mResWrap" hidden><label for="mRes">Resolution · the customer sees this</label><textarea class="inp" id="mRes" maxlength="2000" placeholder="What was done. For example: Expedited and shipped today on FedEx Freight, PRO 2231987."></textarea></div>
+        <div class="fld" id="mResWrap" hidden><label for="mRes">Completion note · the customer sees this</label><textarea class="inp" id="mRes" maxlength="2000" placeholder="Difference posted in EWM, PI document 2000001234."></textarea></div>
         <div class="grid2">
-          <div class="fld"><label for="mOwner">Owner</label><input class="inp" id="mOwner" maxlength="60" list="ownerList" autocomplete="off" placeholder="Who is working it"></div>
+          <div class="fld"><label for="mOwner">Counter / owner</label><input class="inp" id="mOwner" maxlength="60" list="ownerList" autocomplete="off" placeholder="Who is counting"></div>
+          <div class="fld"><label for="mSched">Scheduled for</label><input class="inp" id="mSched" type="date"></div>
+        </div>
+        <div class="grid2">
+          <div class="fld"><label for="mPi">EWM PI document</label><input class="inp" id="mPi" maxlength="60" autocomplete="off" placeholder="2000001234"></div>
           <div class="fld"><label for="mPrio">Priority</label><select class="inp" id="mPrio"><option value="normal">Standard</option><option value="high">High</option><option value="urgent">Urgent</option></select></div>
         </div>
         <div class="grid2">
-          <div class="fld"><label for="mCat">Request type</label><select class="inp" id="mCat"></select></div>
-          <div class="fld"><label for="mNeed">Needed by</label><input class="inp" id="mNeed" type="date"></div>
+          <div class="fld"><label for="mReason">Reason</label><select class="inp" id="mReason"></select></div>
+          <div class="fld"><label for="mNeed">Results needed by</label><input class="inp" id="mNeed" type="date"></div>
         </div>
         <div class="fld"><label for="mAcct">Customer account</label><input class="inp" id="mAcct" maxlength="60" list="acctList" autocomplete="off"></div>
         <div class="err" id="mErr" role="alert" hidden></div>
@@ -642,10 +751,10 @@ body.demo .toast{bottom:calc(5.2rem + env(safe-area-inset-bottom,0px))}
           <textarea class="inp" id="cText" maxlength="2000"></textarea>
           <div class="row-btns"><button type="submit" class="btn primary" id="cGo">Send</button><p class="hint" id="cHint"></p></div>
         </form>
-        <div class="banner" id="dClosedNote" hidden>
-          <b>This request is closed</b>
-          If something still isn’t right, start a follow-up and we’ll pick it up from there.
-          <div class="row-btns" style="margin-top:.6rem"><button type="button" class="btn" id="dFollow">Start a follow-up request</button></div>
+        <div class="banner" id="dClosedNote" hidden style="background:var(--sunk)">
+          <b>This count is complete</b>
+          <span>Need it checked again? Start a follow-up count with the same lines.</span>
+          <div class="row-btns"><button type="button" class="btn" id="dFollow">Request a follow-up count</button></div>
         </div>
       </div>
     </div>
@@ -679,26 +788,34 @@ const str = (v, n) => typeof v === 'string' ? v.trim().slice(0, n || 200) : '';
 const num = v => typeof v === 'number' && isFinite(v) ? v : null;
 const ymd = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
 const HOUR = 36e5, DAY = 864e5;
-const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
+const plural = (n, w) => n.toLocaleString() + ' ' + w + (n === 1 ? '' : 's');
+const round3 = n => Math.round(n * 1000) / 1000;
+const qty = v => typeof v === 'number' && isFinite(v) && v >= 0 && v < 1e9 ? round3(v) : null;
+/* "1,234" and " 12 " are fine; blank is null; anything else is NaN so the form can say which row is wrong */
+function parseQty(s){ s = String(s == null ? '' : s).trim().replace(/[\s,]/g, ''); if(s === '') return null; const n = Number(s); return isFinite(n) && n >= 0 && n < 1e9 ? round3(n) : NaN; }
+const fmtQty = n => n == null ? '—' : Number(n).toLocaleString(undefined, {maximumFractionDigits:3});
+const signed = n => n > 0 ? '+' + fmtQty(n) : n < 0 ? '−' + fmtQty(-n) : '0';
+const ccNo = id => 'CC-' + id;
 
 const ROLE_LABEL = {customer:'Customer', agent:'CEVA team', admin:'Admin'};
 const PRIO = {urgent:'Urgent', high:'High', normal:'Standard'};
 const PRIO_RANK = {urgent:0, high:1, normal:2};
-const STATUS = {new:'New', in_progress:'In progress', waiting:'Waiting on customer', closed:'Closed'};
-const DEFAULT_TYPES = [
-  'Order change or expedite', 'Inventory question or adjustment', 'Shipping or carrier issue', 'Receiving or ASN',
-  'Returns (RMA)', 'Damage or shortage claim', 'Billing or invoice', 'Report or data request',
-  'Special project or value-added service', 'Other'
+const STATUS = {new:'Requested', scheduled:'Scheduled', counting:'Counting', review:'Awaiting approval', approved:'Approved', closed:'Completed'};
+const STATUS_CUST = {review:'Needs your approval', approved:'Approved · posting'};
+const DEFAULT_REASONS = [
+  'Our system doesn’t match your inventory report', 'Order short-shipped or mis-picked', 'Before a promotion or launch',
+  'Audit or period-end', 'Damage or quality concern', 'Batch or expiry check', 'Can’t find product in its bin', 'Routine check', 'Other'
 ];
-const DEFAULT_TARGETS = {urgent:24, high:72, normal:120};
+const DEFAULT_TARGETS = {urgent:24, high:48, normal:72};
 const VIEWS = ['list', 'new', 'dash', 'settings'];
+const MAX_LINES = 200, MAX_RESULTS = 300;
 
 const S = {
   demo:false, demoAs:'customer', fbStore:null, demoStore:null, store:null, fb:null,
   conn:'connecting', loaded:false,
   reqs:[], byId:{}, config:{}, people:[], access:[], myAccess:undefined,
   view:'list', filter:'open', q:'', acct:'', limit:200, dashDays:90, dashAcct:'',
-  open:null, notes:[], notesUnsub:null, mDirty:false, mFor:null,
+  open:null, notes:[], notesUnsub:null, mDirty:false, mFor:null, rDirty:false, rFor:null,
   unsubs:[], roleUnsub:null, accessUnsub:null, seen:null, gate:'wait', prefill:null
 };
 const real = {user:null, role:null, account:'', name:'', ready:false};
@@ -711,34 +828,49 @@ const isStaff = () => me().role === 'agent' || me().role === 'admin';
 const isAdmin = () => me().role === 'admin';
 const isReady = () => S.demo || real.ready;
 const showTargets = () => isStaff() || S.config.showTargets !== false;
+const approvalOn = () => S.config.approvalRequired !== false;
 
 /* ---------- config helpers ---------- */
-function types(){
-  const t = Array.isArray(S.config.types) ? S.config.types.map(x => str(x, 60)).filter(Boolean) : [];
-  return t.length ? t : DEFAULT_TYPES;
+function reasons(){
+  const t = Array.isArray(S.config.reasons) ? S.config.reasons.map(x => str(x, 80)).filter(Boolean) : [];
+  return t.length ? t : DEFAULT_REASONS;
 }
 function targetH(p){
   const t = S.config.targets || {};
   const v = Number(t[p]);
   return v > 0 && v <= 2000 ? v : DEFAULT_TARGETS[p];
 }
-const portalName = () => str(S.config.portalName, 60) || 'Customer Requests';
+const portalName = () => str(S.config.portalName, 60) || 'Cycle Counts';
 
 /* ---------- data shaping ---------- */
+function normLine(x){
+  x = x && typeof x === 'object' ? x : {};
+  return {product:str(x.product, 40), bin:str(x.bin, 18), batch:str(x.batch, 20), uom:str(x.uom, 6).toUpperCase(), book:qty(x.book)};
+}
+function normResult(x){
+  const l = normLine(x); x = x && typeof x === 'object' ? x : {};
+  l.counted = qty(x.counted); l.recount = x.recount === true; l.note = str(x.note, 120);
+  return l;
+}
 function normReq(id, d){
   d = d || {};
   return {
     id:String(id), n:Number(id) || 0,
-    account:str(d.account, 60), category:str(d.category, 60),
+    account:str(d.account, 60), reason:str(d.reason, 80),
     priority:PRIO[d.priority] ? d.priority : 'normal',
-    subject:str(d.subject, 120) || '(no subject)', details:str(d.details, 4000), refs:str(d.refs, 300),
+    subject:str(d.subject, 120) || 'Cycle count', details:str(d.details, 4000), refs:str(d.refs, 300),
     neededBy:/^\d{4}-\d{2}-\d{2}$/.test(d.neededBy) ? d.neededBy : '',
     status:STATUS[d.status] ? d.status : 'new', owner:str(d.owner, 60), resolution:str(d.resolution, 2000),
     source:d.source === 'ceva' ? 'ceva' : 'portal',
     createdAt:num(d.createdAt) || 0, createdBy:str(d.createdBy, 128),
     createdByName:str(d.createdByName, 60), createdByEmail:str(d.createdByEmail, 120),
     updatedAt:num(d.updatedAt) || 0, closedAt:num(d.closedAt), firstResponseAt:num(d.firstResponseAt),
-    lastReplyAt:num(d.lastReplyAt), lastReplyBy:['customer', 'ceva'].includes(d.lastReplyBy) ? d.lastReplyBy : ''
+    lastReplyAt:num(d.lastReplyAt), lastReplyBy:['customer', 'ceva'].includes(d.lastReplyBy) ? d.lastReplyBy : '',
+    lines:Array.isArray(d.lines) ? d.lines.slice(0, MAX_LINES).map(normLine).filter(l => l.product) : [],
+    results:Array.isArray(d.results) ? d.results.slice(0, MAX_RESULTS).map(normResult).filter(l => l.product) : [],
+    piDoc:str(d.piDoc, 60), scheduledFor:/^\d{4}-\d{2}-\d{2}$/.test(d.scheduledFor) ? d.scheduledFor : '',
+    countedAt:num(d.countedAt), approval:['approved', 'recount'].includes(d.approval) ? d.approval : '',
+    approvalBy:str(d.approvalBy, 60), approvalAt:num(d.approvalAt)
   };
 }
 function normNote(id, d, internal){
@@ -748,8 +880,35 @@ function normNote(id, d, internal){
 }
 function needAt(s){ const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d, 23, 59).getTime(); }
 function dueAt(r){ return r.neededBy ? needAt(r.neededBy) : r.createdAt + targetH(r.priority) * HOUR; }
-const onTime = r => r.closedAt != null && r.closedAt <= dueAt(r);
-const isOverdue = (r, now) => r.status !== 'closed' && now > dueAt(r);
+const countedOnTime = r => r.countedAt != null && r.countedAt <= dueAt(r);
+const isOverdue = (r, now) => r.countedAt == null && r.status !== 'closed' && now > dueAt(r);
+
+/* Counted results: how many lines, how many off, net and absolute difference, book total */
+const isCounted = x => x.book != null && x.counted != null;
+function statsOf(rows){
+  let n = 0, off = 0, net = 0, abs = 0, book = 0;
+  rows.forEach(x => { if(!isCounted(x)) return; const d = round3(x.counted - x.book); n++; if(d !== 0) off++; net += d; abs += Math.abs(d); book += x.book; });
+  return {n, off, net:round3(net), abs:round3(abs), book:round3(book)};
+}
+function netText(rows){
+  const g = {};
+  rows.forEach(x => { if(!isCounted(x)) return; const k = x.uom || ''; g[k] = round3((g[k] || 0) + x.counted - x.book); });
+  const parts = Object.entries(g).filter(([, v]) => v !== 0).map(([u, v]) => signed(v) + (u ? ' ' + u : ''));
+  return parts.length ? 'net ' + parts.slice(0, 3).join(', ') + (parts.length > 3 ? ', …' : '') : 'net 0';
+}
+function resultSummary(r){
+  const s = statsOf(r.results);
+  if(!s.n) return '';
+  return s.off ? s.off + ' of ' + s.n + ' off · ' + netText(r.results) : 'No difference';
+}
+/* Percent to one decimal, rounded normally, but never 100% unless it really is */
+function pctOf(v){ let p = Math.round(v * 1000) / 10; if(p >= 100 && v < 1) p = 99.9; return p.toLocaleString(undefined, {maximumFractionDigits:1}) + '%'; }
+const pct = (a, b) => b ? pctOf(a / b) : '—';
+function autoTitle(lines){
+  const prods = [...new Set(lines.map(l => l.product))];
+  if(prods.length === 1) return ('Count ' + prods[0] + (lines.length === 1 && lines[0].bin ? ' in ' + lines[0].bin : '')).slice(0, 120);
+  return 'Count ' + plural(prods.length, 'product') + (lines.length > prods.length ? ', ' + lines.length + ' lines' : '');
+}
 
 /* ---------- formatting ---------- */
 function fmtDay(ms){
@@ -769,14 +928,16 @@ function fmtDur(ms){
 }
 function fmtAgo(ms){ const d = Date.now() - ms; return d < 6e4 ? 'just now' : fmtDur(d) + ' ago'; }
 const fmtNum = n => Math.round(n).toLocaleString();
-function stLabel(st){ return !isStaff() && st === 'waiting' ? 'Waiting on you' : STATUS[st]; }
-function stChip(st){ return '<span class="st ' + st + (!isStaff() && st === 'waiting' ? ' you' : '') + '"><i aria-hidden="true"></i>' + esc(stLabel(st)) + '</span>'; }
+function stLabel(st){ return !isStaff() && STATUS_CUST[st] ? STATUS_CUST[st] : STATUS[st]; }
+function stChip(st){ return '<span class="st ' + st + (!isStaff() && st === 'review' ? ' you' : '') + '"><i aria-hidden="true"></i>' + esc(stLabel(st)) + '</span>'; }
 function prChip(p){ return '<span class="pr ' + p + '">' + PRIO[p] + '</span>'; }
 function dueInfo(r, now){
-  if(r.status === 'closed'){
-    if(!showTargets()) return {cls:'', t:'Closed ' + fmtDay(r.closedAt)};
-    return onTime(r) ? {cls:'ok', t:'Closed on time'} : {cls:'late', t:'Closed late'};
+  if(r.approval === 'recount' && r.status === 'counting') return {cls:'soon', t:'Recount requested'};
+  if(r.countedAt != null){
+    if(!showTargets()) return {cls:'', t:'Counted ' + fmtDay(r.countedAt)};
+    return countedOnTime(r) ? {cls:'ok', t:'Counted on time'} : {cls:'late', t:'Counted late'};
   }
+  if(r.status === 'closed') return {cls:'', t:'Closed ' + fmtDay(r.closedAt || r.updatedAt)};
   const left = dueAt(r) - now;
   if(left < 0) return {cls:'late', t:'Overdue ' + fmtDur(-left)};
   const span = Math.max(HOUR, dueAt(r) - r.createdAt);
@@ -794,7 +955,7 @@ function writeErr(e){
   if(c === 'unavailable' || c === 'failed-precondition') return 'Can’t reach the server. Check the connection and try again.';
   return 'Couldn’t save. Check the connection and try again.';
 }
-/* Updates and replies apply on screen at once and sync when the network allows; a write the server refuses rolls back and shows a message. */
+/* Changes apply on screen at once and sync when the network allows; a write the server refuses rolls back and shows a message. */
 function commit(p){ Promise.resolve(p).catch(e => toast(writeErr(e))); }
 
 /* ---------- data lifecycle ---------- */
@@ -826,7 +987,7 @@ function openNotes(id){
 }
 
 /* New-request alerts for the CEVA team while the page is open */
-function alertsOn(){ try{ return localStorage.getItem('reqAlerts') === '1'; }catch(_){ return false; } }
+function alertsOn(){ try{ return localStorage.getItem('ccAlerts') === '1'; }catch(_){ return false; } }
 function checkNew(list, fromCache){
   if(!isStaff()) return;
   if(!S.seen){ if(!fromCache) S.seen = new Set(list.map(r => r.id)); return; }
@@ -835,10 +996,10 @@ function checkNew(list, fromCache){
   const theirs = fresh.filter(r => r.status === 'new' && r.createdBy !== me().user.uid);
   if(!theirs.length) return;
   const r = theirs[0];
-  const msg = theirs.length === 1 ? 'New request #' + r.id + ' from ' + r.account + ': ' + r.subject : theirs.length + ' new requests';
+  const msg = theirs.length === 1 ? 'New count request ' + ccNo(r.id) + ' from ' + r.account + ': ' + r.subject : theirs.length + ' new count requests';
   toast(msg);
   if(alertsOn() && document.hidden && 'Notification' in window && Notification.permission === 'granted'){
-    try{ new Notification(portalName(), {body:msg, icon:'../assets/ceva-logo.svg', tag:'req-' + r.id}); }catch(_){}
+    try{ new Notification(portalName(), {body:msg, icon:'../assets/ceva-logo.svg', tag:'cc-' + r.id}); }catch(_){}
   }
 }
 
@@ -846,7 +1007,7 @@ function checkNew(list, fromCache){
 function setConn(){
   const dot = $('#tDot'), t = $('#tConn');
   let cls = '', txt = 'Connecting…';
-  if(S.demo){ cls = ''; txt = 'Example data'; }
+  if(S.demo){ txt = 'Example data'; }
   else if(S.conn === 'live'){ cls = 'ok'; txt = 'Live'; }
   else if(S.conn === 'offline'){ txt = 'Offline'; }
   else if(S.conn === 'error'){ cls = 'bad'; txt = 'Connection lost'; }
@@ -862,9 +1023,8 @@ function renderAll(){
   $('#tEb').textContent = isStaff() ? 'CEVA team' : m.account;
   $('#tWho').textContent = m.name || (m.user && m.user.email) || '';
   setConn();
-  const open = S.reqs.filter(r => r.status !== 'closed');
-  $('#nOpen').textContent = open.length;
-  const badge = isStaff() ? S.reqs.filter(r => r.status === 'new').length : S.reqs.filter(r => r.status === 'waiting').length;
+  $('#nOpen').textContent = S.reqs.filter(r => r.status !== 'closed').length;
+  const badge = isStaff() ? S.reqs.filter(r => r.status === 'new' || r.status === 'approved').length : S.reqs.filter(r => r.status === 'review').length;
   document.title = (badge ? '(' + badge + ') ' : '') + portalName();
   fillLists();
   if(S.view === 'list') renderList();
@@ -896,12 +1056,14 @@ function fillLists(){
   S.dashAcct = fill($('#dAcct'), S.dashAcct, 'All customer accounts');
 }
 
-/* ---------- requests list ---------- */
-const FILTERS_STAFF = [['open', 'Open'], ['new', 'New'], ['waiting', 'Waiting on customer'], ['closed', 'Closed'], ['all', 'All']];
-const FILTERS_CUST = [['open', 'Open'], ['waiting', 'Waiting on you'], ['closed', 'Closed'], ['all', 'All']];
-const MATCH = {open:r => r.status !== 'closed', new:r => r.status === 'new', waiting:r => r.status === 'waiting', closed:r => r.status === 'closed', all:() => true};
+/* ---------- counts list ---------- */
+const FILTERS_STAFF = [['open', 'Open'], ['new', 'Requested'], ['work', 'Scheduled or counting'], ['review', 'Awaiting approval'], ['approved', 'Approved, to post'], ['closed', 'Completed'], ['all', 'All']];
+const FILTERS_CUST = [['open', 'Open'], ['review', 'Needs your approval'], ['closed', 'Completed'], ['all', 'All']];
+const MATCH = {open:r => r.status !== 'closed', new:r => r.status === 'new', work:r => r.status === 'scheduled' || r.status === 'counting',
+  review:r => r.status === 'review', approved:r => r.status === 'approved', closed:r => r.status === 'closed', all:() => true};
 function searchHit(r, words){
-  const hay = ['#' + r.id, r.subject, r.refs, r.account, r.createdByName, r.createdByEmail, r.owner, r.category, r.details].join(' ').toLowerCase();
+  const hay = [ccNo(r.id), '#' + r.id, r.subject, r.refs, r.piDoc, r.account, r.createdByName, r.createdByEmail, r.owner, r.reason, r.details]
+    .concat(r.lines.map(l => [l.product, l.bin, l.batch].join(' '))).concat(r.results.map(l => [l.product, l.bin, l.batch].join(' '))).join(' ').toLowerCase();
   return words.every(w => hay.includes(w));
 }
 function listBase(){
@@ -913,27 +1075,29 @@ function listBase(){
 }
 function sortList(L, f){
   const now = Date.now();
-  if(f === 'open' || f === 'new' || f === 'waiting'){
-    return L.slice().sort((a, b) => (isOverdue(b, now) - isOverdue(a, now)) || (dueAt(a) - dueAt(b)) || (PRIO_RANK[a.priority] - PRIO_RANK[b.priority]) || (a.n - b.n));
-  }
   if(f === 'closed') return L.slice().sort((a, b) => (b.closedAt || 0) - (a.closedAt || 0));
-  return L.slice().sort((a, b) => b.n - a.n);
+  if(f === 'all') return L.slice().sort((a, b) => b.n - a.n);
+  return L.slice().sort((a, b) => (isOverdue(b, now) - isOverdue(a, now)) || (dueAt(a) - dueAt(b)) || (PRIO_RANK[a.priority] - PRIO_RANK[b.priority]) || (a.n - b.n));
 }
 function reqRow(r, now){
   const staff = isStaff(), di = dueInfo(r, now);
-  const sub = [r.category, r.refs].filter(Boolean).join(' · ');
+  const sub = [r.reason, plural(r.lines.length, 'line'), r.piDoc ? 'PI ' + r.piDoc : ''].filter(Boolean).join(' · ');
   const replied = staff && r.lastReplyBy === 'customer' && r.status !== 'closed';
   const who = r.createdByName || r.createdByEmail || '—';
+  const counted = r.countedAt != null;
+  const res = counted ? (r.approval === 'recount' && r.status === 'counting' ? 'Before recount: ' : '') + resultSummary(r) : r.scheduledFor ? 'Scheduled ' + fmtNeed(r.scheduledFor) : '';
+  const resCls = counted ? (statsOf(r.results).off ? 'var' : 'ok') : '';
   return '<a class="req ' + r.priority + '" href="#req/' + esc(r.id) + '">' +
-    '<span class="r-id">#' + esc(r.id) + '</span>' +
+    '<span class="r-id">' + esc(ccNo(r.id)) + '</span>' +
     '<span class="r-main"><span class="r-subj">' + esc(r.subject) + '</span>' +
       '<span class="r-sub">' + (r.priority !== 'normal' ? prChip(r.priority) + ' ' : '') + esc(sub) + '</span></span>' +
-    '<span class="r-st">' + stChip(r.status) + (replied ? '<span class="flag">Customer replied</span>' : '') + '</span>' +
+    '<span class="r-st">' + stChip(r.status) + (replied ? '<span class="flag">Customer replied</span>' : '') +
+      '<span class="r-own"><span class="r-k">Counter</span>' + (r.owner ? '<b>' + esc(r.owner) + '</b>' : (staff ? '<span class="unassigned">Unassigned</span>' : 'Not assigned yet')) + '</span></span>' +
     '<span class="r-meta">' +
       '<span class="r-who">' + (staff ? '<b>' + esc(r.account) + '</b><small>' + esc(who) + ' · ' + esc(fmtAgo(r.createdAt)) + '</small>'
-                                      : '<span>' + esc(who) + '</span><small>Submitted ' + esc(fmtDay(r.createdAt)) + '</small>') + '</span>' +
-      '<span class="r-due due ' + di.cls + '">' + (showTargets() || r.status === 'closed' ? esc(di.t) : '') + '</span>' +
-      '<span class="r-own"><span class="r-k">Owner</span>' + (r.owner ? esc(r.owner) : (staff ? '<span class="unassigned">Unassigned</span>' : '<span class="muted">Not assigned yet</span>')) + '</span>' +
+                                      : '<span>' + esc(who) + '</span><small>Requested ' + esc(fmtDay(r.createdAt)) + '</small>') + '</span>' +
+      '<span class="r-due due ' + di.cls + '">' + (showTargets() || counted || r.status === 'closed' ? esc(di.t) : '') + '</span>' +
+      '<span class="r-res res ' + resCls + '">' + esc(res) + '</span>' +
     '</span></a>';
 }
 function renderList(){
@@ -942,19 +1106,19 @@ function renderList(){
   if(!F.some(f => f[0] === S.filter)) S.filter = 'open';
   const base = listBase();
   $('#fChips').innerHTML = F.map(([k, l]) => '<button type="button" class="fchip" data-f="' + k + '" aria-pressed="' + (S.filter === k) + '">' + l + ' <span class="n">' + base.filter(MATCH[k]).length + '</span></button>').join('');
-  $('#listLead').textContent = staff ? 'Every customer account. Overdue and soonest-due first.' : 'Everything ' + me().account + ' has asked CEVA for.';
+  $('#listLead').textContent = staff ? 'Every customer account. Overdue and soonest-due first.' : 'Every cycle count ' + me().account + ' has asked CEVA for, with the results.';
   const L = sortList(base.filter(MATCH[S.filter]), S.filter);
   const el = $('#list');
-  if(!S.loaded){ el.innerHTML = '<div class="lempty">Loading requests…</div>'; return; }
-  if(S.conn === 'error' && !S.reqs.length){ el.innerHTML = '<div class="lempty"><strong>Can’t load requests</strong>The connection to the database was lost. Reload the page.</div>'; return; }
+  if(!S.loaded){ el.innerHTML = '<div class="lempty">Loading counts…</div>'; return; }
+  if(S.conn === 'error' && !S.reqs.length){ el.innerHTML = '<div class="lempty"><strong>Can’t load counts</strong>The connection to the database was lost. Reload the page.</div>'; return; }
   if(!L.length){
     const none = !S.reqs.length;
-    el.innerHTML = '<div class="lempty"><strong>' + (none ? 'No requests yet' : S.q ? 'Nothing matches that search' : 'Nothing here') + '</strong>' +
-      (none ? (staff ? 'Customer requests show here as soon as they’re submitted. You can also log one from a call or email with New request.' : 'Use New request to ask CEVA for anything: an expedite, an inventory check, a claim, a report. You can follow it here until it’s closed.')
-            : S.q ? 'Try a request number, PO, SKU or name.' : 'No requests in this group right now.') + '</div>';
+    el.innerHTML = '<div class="lempty"><strong>' + (none ? 'No count requests yet' : S.q ? 'Nothing matches that search' : 'Nothing here') + '</strong>' +
+      (none ? (staff ? 'Count requests show here as soon as customers submit them. You can also log one from a call or email with Request a count.' : 'Use Request a count to ask CEVA to count products, bins or batches. You’ll see the book qty, counted qty and difference here, and approve the difference before it’s posted.')
+            : S.q ? 'Try a count number, product, storage bin, batch or PI document.' : 'No counts in this group right now.') + '</div>';
     return;
   }
-  const head = '<div class="lhead" aria-hidden="true"><span>No.</span><span>Request</span><span>' + (staff ? 'Customer · requester' : 'Requested by') + '</span><span>Status</span><span>' + (showTargets() ? 'Due' : '') + '</span><span>Owner</span></div>';
+  const head = '<div class="lhead" aria-hidden="true"><span>Count</span><span>What</span><span>' + (staff ? 'Customer · requester' : 'Requested by') + '</span><span>Status · counter</span><span>' + (showTargets() ? 'Results due' : '') + '</span><span>Result</span></div>';
   const now = Date.now();
   el.innerHTML = head + L.slice(0, S.limit).map(r => reqRow(r, now)).join('') +
     (L.length > S.limit ? '<div class="lmore"><button type="button" class="btn" id="lMore">Show ' + Math.min(200, L.length - S.limit) + ' more of ' + (L.length - S.limit) + '</button></div>' : '');
@@ -964,47 +1128,132 @@ $('#fQ').addEventListener('input', e => { S.q = e.target.value; S.limit = 200; r
 $('#fAcct').addEventListener('change', e => { S.acct = e.target.value; renderList(); });
 $('#list').addEventListener('click', e => { if(e.target.id === 'lMore'){ S.limit += 200; renderList(); } });
 
-/* CSV of whatever the list is showing */
+/* CSV: one row per counted line (or per requested line, before results), for Excel, Power BI or matching against EWM */
 function csvCell(v){
+  if(typeof v === 'number') return String(v);
   let s = v == null ? '' : String(v);
-  if(/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+  if(/^[=+\-@\t\r]/.test(s)) s = "'" + s; /* text that a spreadsheet would run as a formula */
   return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
 }
 const isoLocal = ms => ms ? ymd(new Date(ms)) + ' ' + pad(new Date(ms).getHours()) + ':' + pad(new Date(ms).getMinutes()) : '';
 $('#btnCsv').addEventListener('click', () => {
   const L = sortList(listBase().filter(MATCH[S.filter]), S.filter);
   if(!L.length) return toast('Nothing to download');
-  const tgt = showTargets();
-  const head = ['Request', 'Account', 'Status', 'Priority', 'Type', 'Subject', 'Details', 'References', 'Requested by', 'Requester email', 'Submitted', 'Needed by']
-    .concat(tgt ? ['Target'] : []).concat(['Owner', 'First response', 'Closed', 'Resolution']).concat(tgt ? ['On time'] : []);
-  const rows = L.map(r => [r.id, r.account, STATUS[r.status], PRIO[r.priority], r.category, r.subject, r.details, r.refs, r.createdByName, r.createdByEmail, isoLocal(r.createdAt), r.neededBy]
-    .concat(tgt ? [isoLocal(dueAt(r))] : []).concat([r.owner, isoLocal(r.firstResponseAt), isoLocal(r.closedAt), r.resolution])
-    .concat(tgt ? [r.status === 'closed' ? (onTime(r) ? 'Yes' : 'No') : ''] : []));
+  const head = ['Count', 'Account', 'Status', 'Reason', 'Priority', 'Requested by', 'Requested', 'Results needed by', 'Scheduled for', 'Counter', 'EWM PI document',
+    'Product', 'Storage bin', 'Batch', 'UoM', 'Customer book qty', 'Book qty', 'Counted qty', 'Difference', 'Recounted', 'Line note',
+    'Results posted', 'Approval', 'Approved by', 'Approved at', 'Completed', 'Completion note'];
+  const rows = [];
+  L.forEach(r => {
+    const base = [ccNo(r.id), r.account, STATUS[r.status], r.reason, PRIO[r.priority], r.createdByName, isoLocal(r.createdAt), r.neededBy, r.scheduledFor, r.owner, r.piDoc];
+    const tail = [isoLocal(r.countedAt), r.approval === 'approved' ? 'Approved' : r.approval === 'recount' ? 'Recount requested' : '', r.approvalBy, isoLocal(r.approvalAt), isoLocal(r.closedAt), r.resolution];
+    const custBook = x => { const l = r.lines.find(l => l.product === x.product && (!l.bin || l.bin === x.bin) && (!l.batch || l.batch === x.batch)); return l && l.book != null ? l.book : ''; };
+    if(r.countedAt != null && r.results.length) r.results.forEach(x => rows.push(base.concat([x.product, x.bin, x.batch, x.uom, custBook(x), x.book ?? '', x.counted ?? '', isCounted(x) ? round3(x.counted - x.book) : '', x.recount ? 'Yes' : '', x.note]).concat(tail)));
+    else r.lines.forEach(l => rows.push(base.concat([l.product, l.bin, l.batch, l.uom, l.book ?? '', '', '', '', '', '']).concat(tail)));
+  });
   const csv = '﻿' + [head].concat(rows).map(row => row.map(csvCell).join(',')).join('\r\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
-  a.download = 'requests-' + ymd(new Date()) + '.csv';
+  a.download = 'cycle-counts-' + ymd(new Date()) + '.csv';
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-  toast('Downloaded ' + plural(L.length, 'request'));
+  toast('Downloaded ' + plural(rows.length, 'line') + ' from ' + plural(L.length, 'count'));
 });
 
-/* ---------- new request ---------- */
+/* ---------- line editors ---------- */
+const CUST_COLS = [['product', 'Product', 40], ['bin', 'Storage bin', 18], ['batch', 'Batch', 20], ['uom', 'UoM', 6], ['book', 'Book qty (EWM)', 14, 1]];
+const RES_COLS = [['product', 'Product', 40], ['bin', 'Storage bin', 18], ['batch', 'Batch', 20], ['uom', 'UoM', 6], ['book', 'Book qty', 14, 1], ['counted', 'Counted', 14, 1]];
+function cellHTML(c, val){
+  const [k, label, max, isNum] = c;
+  return '<label class="cell" style="grid-area:' + k + '"><span class="cl">' + label + '</span><input class="inp" data-k="' + k + '" maxlength="' + max + '"' +
+    (isNum ? ' inputmode="decimal"' : '') + ' autocomplete="off" spellcheck="false" aria-label="' + label + '" value="' + esc(val == null ? '' : val) + '"></label>';
+}
+const headHTML = (cols, extra) => '<div class="le-head" aria-hidden="true">' + cols.map(c => '<span>' + c[1] + '</span>').join('') + (extra || '') + '<span></span></div>';
+const X_BTN = '<button type="button" class="le-x" data-del aria-label="Remove line">×</button>';
+function custRowHTML(l){ return '<div class="le-row">' + CUST_COLS.map(c => cellHTML(c, l[c[0]])).join('') + X_BTN + '</div>'; }
+function resRowHTML(x){
+  return '<div class="le-row">' + RES_COLS.map(c => cellHTML(c, x[c[0]])).join('') +
+    '<div class="cell" style="grid-area:diff"><span class="cl">Difference</span><output></output></div>' +
+    '<label class="cell" style="grid-area:note"><span class="cl">Note</span><input class="inp" data-k="note" maxlength="120" autocomplete="off" aria-label="Note" placeholder="Note (optional), e.g. 2 found in overflow bin" value="' + esc(x.note || '') + '"></label>' +
+    '<label class="check rc" style="grid-area:recount"><input type="checkbox" data-k="recount"' + (x.recount ? ' checked' : '') + '><span>Recounted</span></label>' + X_BTN + '</div>';
+}
+/* Read rows from an editor. Blank rows are dropped; a bad number marks the field and reports the row. */
+function readRows(box, numKeys){
+  const out = [], errs = [];
+  box.querySelectorAll('.le-row').forEach((row, i) => {
+    const o = {}; let blank = true;
+    row.querySelectorAll('[data-k]').forEach(inp => {
+      const k = inp.dataset.k;
+      if(inp.type === 'checkbox'){ o[k] = inp.checked; return; }
+      inp.classList.remove('bad');
+      const v = inp.value.trim();
+      if(v) blank = false;
+      if(numKeys.includes(k)){ const q = parseQty(v); if(Number.isNaN(q)){ inp.classList.add('bad'); const lb = inp.getAttribute('aria-label'); errs.push('Row ' + (i + 1) + ': ' + lb.charAt(0).toLowerCase() + lb.slice(1) + ' must be a number of 0 or more.'); } o[k] = Number.isNaN(q) ? null : q; }
+      else o[k] = k === 'uom' ? v.toUpperCase().slice(0, 6) : v;
+    });
+    if(blank) return;
+    if(!o.product){ const p = row.querySelector('[data-k="product"]'); p.classList.add('bad'); errs.push('Row ' + (i + 1) + ' needs a product.'); }
+    out.push(o);
+  });
+  return {rows:out, errs};
+}
+/* Paste from an EWM export or a spreadsheet: tab-separated (what Excel copies) or comma/semicolon-separated. */
+const HDR = {
+  product:/^(product|material|sku|item|article)( ?(no\.?|number|#))?$/i,
+  bin:/^(storage ?bin|bin|location|loc\.?)$/i,
+  batch:/^(batch|lot)( ?(no\.?|number))?$/i,
+  uom:/^(bun|base ?unit( of measure)?|uom|unit( of measure)?|un)$/i,
+  book:/^(book ?qty|book quantity|quantity|qty|avail(able)?\.? ?qty|available quantity|physical stock|on ?hand( qty)?)$/i
+};
+function parsePaste(text){
+  const lines = text.split(/\r?\n/).filter(s => s.trim());
+  if(!lines.length) return {rows:[], skipped:0};
+  const split = s => (s.includes('\t') ? s.split('\t') : s.split(/[;,]/)).map(c => c.trim());
+  let cols = ['product', 'bin', 'batch', 'book', 'uom'];
+  const mapped = split(lines[0]).map(c => Object.keys(HDR).find(k => HDR[k].test(c)) || null);
+  if(mapped.includes('product')){ cols = mapped; lines.shift(); }
+  const rows = []; let skipped = 0;
+  lines.forEach(s => {
+    const o = {}; split(s).forEach((c, i) => { const k = cols[i]; if(k && o[k] == null) o[k] = c; });
+    const l = {product:str(o.product, 40), bin:str(o.bin, 18), batch:str(o.batch, 20), uom:str(o.uom, 6).toUpperCase(), book:parseQty(o.book)};
+    if(!l.product){ skipped++; return; }
+    if(Number.isNaN(l.book)) l.book = null;
+    rows.push(l);
+  });
+  return {rows, skipped};
+}
+const lineKey = l => [l.product, l.bin, l.batch, l.uom].join('|').toLowerCase();
+function liveDiff(row){
+  const out = row.querySelector('output'); if(!out) return;
+  const b = parseQty(row.querySelector('[data-k="book"]').value), c = parseQty(row.querySelector('[data-k="counted"]').value);
+  if(b == null || c == null || Number.isNaN(b) || Number.isNaN(c)){ out.textContent = '—'; out.className = 'zero'; row.classList.remove('is-off'); return; }
+  const d = round3(c - b);
+  out.textContent = signed(d); out.className = d ? 'off' : 'zero'; row.classList.toggle('is-off', d !== 0);
+}
+
+/* ---------- new count request ---------- */
+function setCustLines(lines){
+  const box = $('#nLines');
+  box.innerHTML = headHTML(CUST_COLS) + (lines.length ? lines : [{}]).map(custRowHTML).join('');
+  countHint();
+}
+function countHint(){ const n = $('#nLines').querySelectorAll('.le-row').length; $('#nCount').textContent = n > 1 ? n + ' lines' : ''; $('#nAdd').disabled = n >= MAX_LINES; }
 function renderNew(reset){
   const staff = isStaff();
   $('#nStaff').hidden = !staff;
-  $('#nLead').textContent = staff ? 'Log a request for a customer. It gets a number and shows on their tracker.' : 'Tell us what you need. You’ll get a request number and can follow it here until it’s closed.';
-  const sel = $('#nCat'), cur = sel.value;
-  const opts = '<option value="">Choose one…</option>' + types().map(t => '<option>' + esc(t) + '</option>').join('');
+  $('#nLead').textContent = staff ? 'Log a count for a customer. It gets a number and shows on their list.' : 'List what to count. You’ll get a count number, see the results here, and approve any difference before it’s posted in EWM.';
+  const sel = $('#nReason'), cur = sel.value;
+  const opts = '<option value="">Choose one…</option>' + reasons().map(t => '<option>' + esc(t) + '</option>').join('');
   if(sel.dataset.sig !== opts){ sel.innerHTML = opts; sel.dataset.sig = opts; sel.value = cur; }
   if(reset){
     $('#nForm').hidden = false; $('#nDone').hidden = true; $('#nErr').hidden = true; $('#nGo').disabled = false;
-    ['nSubj', 'nDetails', 'nRefs', 'nNeed', 'nAcct', 'nWho', 'nWhoEmail'].forEach(id => { $('#' + id).value = ''; });
+    ['nSubj', 'nDetails', 'nRefs', 'nNeed', 'nPi', 'nAcct', 'nWho', 'nWhoEmail', 'nPaste'].forEach(id => { $('#' + id).value = ''; });
+    $('#nPasteBox').hidden = true;
     sel.value = '';
     document.querySelector('input[name="nPrio"][value="normal"]').checked = true;
     if(staff && S.acct) $('#nAcct').value = S.acct;
     const p = S.prefill; S.prefill = null;
-    if(p){ $('#nSubj').value = p.subject; $('#nRefs').value = p.refs; $('#nDetails').value = p.details; if(types().includes(p.category)) sel.value = p.category; }
+    setCustLines(p ? p.lines : []);
+    if(p){ $('#nSubj').value = p.subject; $('#nRefs').value = p.refs; if(staff) $('#nAcct').value = p.account || ''; if(reasons().includes(p.reason)) sel.value = p.reason; }
   }
   prioHint();
 }
@@ -1012,52 +1261,83 @@ function prioHint(){
   const p = document.querySelector('input[name="nPrio"]:checked').value;
   const h = $('#nPrioHint');
   h.hidden = !showTargets();
-  h.textContent = 'We aim to close ' + PRIO[p].toLowerCase() + ' requests within ' + hoursText(targetH(p)) + '. A needed-by date sets the target instead.';
+  h.textContent = PRIO[p] + ' counts: results within ' + hoursText(targetH(p)) + '. A results-needed-by date sets the target instead.';
 }
 document.querySelectorAll('input[name="nPrio"]').forEach(r => r.addEventListener('change', prioHint));
+$('#nAdd').addEventListener('click', () => {
+  const box = $('#nLines'); box.insertAdjacentHTML('beforeend', custRowHTML({}));
+  box.querySelector('.le-row:last-child [data-k="product"]').focus(); countHint();
+});
+$('#nLines').addEventListener('click', e => {
+  if(!e.target.closest('[data-del]')) return;
+  const row = e.target.closest('.le-row'), box = $('#nLines');
+  if(box.querySelectorAll('.le-row').length === 1) row.querySelectorAll('input').forEach(i => { i.value = ''; });
+  else row.remove();
+  countHint();
+});
+$('#nPasteBtn').addEventListener('click', () => { $('#nPasteBox').hidden = false; $('#nPaste').focus(); });
+$('#nPasteX').addEventListener('click', () => { $('#nPasteBox').hidden = true; $('#nPaste').value = ''; });
+$('#nPasteGo').addEventListener('click', () => {
+  const {rows, skipped} = parsePaste($('#nPaste').value);
+  if(!rows.length) return toast('No product numbers found in what was pasted');
+  const have = readRows($('#nLines'), ['book']).rows.filter(r => r.product).map(r => normLine(Object.assign({}, r, {book:r.book})));
+  const seen = new Set(have.map(lineKey)); let dup = 0;
+  const all = have.slice();
+  rows.forEach(r => { const k = lineKey(r); if(seen.has(k)){ dup++; return; } seen.add(k); all.push(r); });
+  const cut = Math.max(0, all.length - MAX_LINES);
+  setCustLines(all.slice(0, MAX_LINES));
+  $('#nPasteBox').hidden = true; $('#nPaste').value = '';
+  toast('Added ' + plural(rows.length - dup - Math.min(cut, rows.length), 'line') + [dup ? dup + ' already listed' : '', skipped ? skipped + ' without a product skipped' : '', cut ? cut + ' over the ' + MAX_LINES + '-line limit left out' : ''].filter(Boolean).map(s => ' · ' + s).join(''));
+});
 function nErr(t){ const e = $('#nErr'); e.textContent = t || ''; e.hidden = !t; }
 $('#nForm').addEventListener('submit', async e => {
   e.preventDefault();
   if(!S.store) return nErr('Not connected. Reload the page and try again.');
   const staff = isStaff(), m = me(), now = Date.now();
+  const {rows, errs} = readRows($('#nLines'), ['book']);
+  if(errs.length) return nErr(errs[0]);
+  const lines = []; const seen = new Set();
+  rows.forEach(r => { const l = normLine(r); const k = lineKey(l); if(!seen.has(k)){ seen.add(k); lines.push(l); } });
   const account = staff ? str($('#nAcct').value, 60) : m.account;
+  if(staff && !account) return nErr('Enter the customer account this count is for.');
+  if(!$('#nReason').value) return nErr('Pick why the count is needed.');
+  if(!lines.length) return nErr('Add at least one product to count.');
+  if(lines.length > MAX_LINES) return nErr('Up to ' + MAX_LINES + ' lines per request. Split larger counts into two requests.');
+  const need = /^\d{4}-\d{2}-\d{2}$/.test($('#nNeed').value) ? $('#nNeed').value : '';
+  if(need && needAt(need) < now - DAY) return nErr('The results-needed-by date is in the past.');
   const data = {
-    account, category:str($('#nCat').value, 60),
+    account, reason:str($('#nReason').value, 80),
     priority:document.querySelector('input[name="nPrio"]:checked').value,
-    subject:str($('#nSubj').value, 120), details:str($('#nDetails').value, 4000), refs:str($('#nRefs').value, 300),
-    neededBy:/^\d{4}-\d{2}-\d{2}$/.test($('#nNeed').value) ? $('#nNeed').value : '',
-    status:'new', owner:'', resolution:'', source:staff ? 'ceva' : 'portal',
+    subject:str($('#nSubj').value, 120) || autoTitle(lines), details:str($('#nDetails').value, 4000), refs:str($('#nRefs').value, 300),
+    neededBy:need, status:'new', owner:'', resolution:'', source:staff ? 'ceva' : 'portal',
     createdAt:now, createdBy:m.user.uid,
     createdByName:staff ? (str($('#nWho').value, 60) || m.name) : m.name,
     createdByEmail:staff ? str($('#nWhoEmail').value, 120) : str(m.user.email || '', 120),
-    updatedAt:now, closedAt:null, firstResponseAt:null, lastReplyAt:null, lastReplyBy:''
+    updatedAt:now, closedAt:null, firstResponseAt:null, lastReplyAt:null, lastReplyBy:'',
+    lines, results:[], piDoc:str($('#nPi').value, 60), scheduledFor:'', countedAt:null, approval:'', approvalBy:'', approvalAt:null
   };
-  if(staff && !account) return nErr('Enter the customer account this request is for.');
-  if(!data.category) return nErr('Pick a request type.');
-  if(!data.subject) return nErr('Add a short subject so everyone can tell requests apart.');
-  if(data.neededBy && needAt(data.neededBy) < now - DAY) return nErr('The needed-by date is in the past.');
   if(!S.demo && navigator.onLine === false) return nErr('You’re offline. Connect to the internet and submit again. Nothing you typed is lost.');
   nErr(''); $('#nGo').disabled = true; $('#nGo').textContent = 'Submitting…';
   try{
     const id = await S.store.createRequest(data);
     $('#nForm').hidden = true; $('#nDone').hidden = false;
-    $('#nDoneT').textContent = 'Request #' + id + ' submitted';
-    $('#nDoneP').textContent = staff ? 'It’s on the ' + account + ' tracker now.' : 'The CEVA team has it. Updates and the resolution show on the request, and you can reply there.';
+    $('#nDoneT').textContent = 'Count ' + ccNo(id) + ' requested';
+    $('#nDoneP').textContent = (staff ? 'It’s on the ' + account + ' list now. ' : 'The CEVA team has it. ') + plural(lines.length, 'line') + ' to count. Results, any difference to approve and the completion note show on the count.';
     $('#nDoneView').href = '#req/' + id;
-  }catch(x){ nErr(x && x.code === 'permission-denied' ? 'Your account can’t submit requests. Ask your CEVA contact to check your access.' : writeErr(x)); }
-  finally{ $('#nGo').disabled = false; $('#nGo').textContent = 'Submit request'; }
+  }catch(x){ nErr(x && x.code === 'permission-denied' ? 'Your account can’t request counts. Ask your CEVA contact to check your access.' : writeErr(x)); }
+  finally{ $('#nGo').disabled = false; $('#nGo').textContent = 'Submit count request'; }
 });
 $('#nAgain').addEventListener('click', () => renderNew(true));
 
-/* ---------- request drawer ---------- */
+/* ---------- count drawer ---------- */
 function openDetail(id){
   const changed = S.open !== id;
   S.open = id;
-  if(changed){ S.mDirty = false; S.mFor = null; openNotes(id); $('#cText').value = ''; }
+  if(changed){ S.mDirty = false; S.mFor = null; S.rDirty = false; S.rFor = null; openNotes(id); $('#cText').value = ''; $('#dRecountBox').hidden = true; $('#dRecountText').value = ''; disarm($('#dApprove')); }
   $('#drawer').hidden = false;
   document.body.style.overflow = 'hidden';
   renderDetail();
-  if(changed) setTimeout(() => $('#dTitle').focus({preventScroll:true}), 30);
+  if(changed){ $('#drawer .d-card').scrollTop = 0; setTimeout(() => $('#dTitle').focus({preventScroll:true}), 30); }
 }
 function closeDetailUI(){
   if(!S.open) return;
@@ -1069,39 +1349,91 @@ $('#dClose').addEventListener('click', closeDetail);
 $('#drawer').addEventListener('click', e => { if(e.target.id === 'drawer') closeDetail(); });
 document.addEventListener('keydown', e => { if(e.key === 'Escape' && S.open) closeDetail(); });
 
+function countTable(r){
+  const counted = r.countedAt != null && r.results.length;
+  if(!counted){
+    const anyBook = r.lines.some(l => l.book != null);
+    return '<table class="t"><thead><tr><th>Product</th><th>Storage bin</th><th>Batch</th><th>UoM</th>' + (anyBook ? '<th class="n">Book qty (EWM)</th>' : '') + '</tr></thead><tbody>' +
+      r.lines.map(l => '<tr><td>' + esc(l.product) + '</td><td>' + esc(l.bin || 'All bins') + '</td><td>' + esc(l.batch || '—') + '</td><td>' + esc(l.uom || '—') + '</td>' + (anyBook ? '<td class="n">' + fmtQty(l.book) + '</td>' : '') + '</tr>').join('') + '</tbody></table>';
+  }
+  const anyNote = r.results.some(x => x.note || x.recount);
+  return '<table class="t"><thead><tr><th>Product</th><th>Storage bin</th><th>Batch</th><th>UoM</th><th class="n">Book qty</th><th class="n">Counted</th><th class="n">Difference</th>' + (anyNote ? '<th>Note</th>' : '') + '</tr></thead><tbody>' +
+    r.results.map(x => { const d = isCounted(x) ? round3(x.counted - x.book) : null;
+      return '<tr' + (d ? ' class="off"' : '') + '><td>' + esc(x.product) + '</td><td>' + esc(x.bin || '—') + '</td><td>' + esc(x.batch || '—') + '</td><td>' + esc(x.uom || '—') + '</td><td class="n">' + fmtQty(x.book) + '</td><td class="n">' + fmtQty(x.counted) + '</td><td class="n"><span class="diff' + (d ? '' : ' zero') + '">' + (d == null ? '—' : signed(d)) + '</span></td>' +
+        (anyNote ? '<td class="tw">' + esc([x.recount ? 'Recounted' : '', x.note].filter(Boolean).join(' · ')) + '</td>' : '') + '</tr>'; }).join('') + '</tbody></table>';
+}
+function sumLine(rows){
+  const s = statsOf(rows);
+  if(!s.n) return '';
+  return '<span><b>' + plural(s.n, 'line') + '</b> counted</span><span><b>' + s.off + '</b> with a difference</span><span><b>' + esc(netText(rows)) + '</b></span><span>Line accuracy <b>' + pct(s.n - s.off, s.n) + '</b></span>';
+}
 function renderDetail(){
   if(!S.open || !isReady()) return;
   const r = S.byId[S.open], staff = isStaff(), now = Date.now();
-  $('#dId').textContent = '#' + S.open;
+  $('#dId').textContent = ccNo(S.open);
   if(!r){
-    $('#dChips').innerHTML = ''; $('#dTitle').textContent = S.loaded ? 'Request not found' : 'Loading…';
-    $('#dBanner').innerHTML = S.loaded ? '<div class="banner warn">There’s no request #' + esc(S.open) + ' on this account, or you don’t have access to it.</div>' : '';
-    ['dFacts', 'dThread'].forEach(id => { $('#' + id).innerHTML = ''; });
-    $('#dDetailsSec').hidden = true; $('#mForm').hidden = true; $('#cForm').hidden = true; $('#dClosedNote').hidden = true;
+    $('#dChips').innerHTML = ''; $('#dTitle').textContent = S.loaded ? 'Count not found' : 'Loading…';
+    $('#dBanner').innerHTML = S.loaded ? '<div class="banner warn">There’s no count ' + esc(ccNo(S.open)) + ' on this account, or you don’t have access to it.</div>' : '';
+    ['dFacts', 'dThread', 'dTable', 'dSum'].forEach(id => { $('#' + id).innerHTML = ''; });
+    ['dDetailsSec', 'mForm', 'cForm', 'dClosedNote', 'rForm', 'dDecide'].forEach(id => { $('#' + id).hidden = true; });
     return;
   }
   $('#dChips').innerHTML = stChip(r.status);
   $('#dTitle').textContent = r.subject;
+  const s = statsOf(r.results);
   let ban = '';
-  if(r.status === 'closed') ban = '<div class="banner ok"><b>Closed ' + esc(fmtWhen(r.closedAt)) + (showTargets() ? (onTime(r) ? ' · on time' : ' · after target') : '') + '</b><div class="pre">' + esc(r.resolution || 'No resolution note.') + '</div></div>';
-  else if(r.status === 'waiting' && !staff) ban = '<div class="banner warn"><b>We need something from you</b>Read the latest update below and reply so we can keep going.</div>';
+  if(r.status === 'closed') ban = '<div class="banner ok"><b>Completed ' + esc(fmtWhen(r.closedAt)) + '</b><div class="pre">' + esc(r.resolution || 'No completion note.') + '</div></div>';
+  else if(r.status === 'approved') ban = staff
+    ? '<div class="banner warn"><b>Approved by ' + esc(r.approvalBy || 'the customer') + ' · ' + esc(fmtWhen(r.approvalAt)) + '</b>Post the difference in EWM, then complete the count.<div class="row-btns"><button type="button" class="btn go" id="dComplete">Complete count</button></div></div>'
+    : '<div class="banner info"><b>You approved the difference · ' + esc(fmtWhen(r.approvalAt)) + '</b>CEVA is posting it in EWM. You’ll see the completion note here.</div>';
+  else if(r.status === 'review' && staff) ban = '<div class="banner info"><b>Waiting for ' + esc(r.account) + ' to approve</b>Results were posted ' + esc(fmtWhen(r.countedAt)) + '. The customer approves the difference or asks for a recount.</div>';
+  else if(r.approval === 'recount' && r.status !== 'review') ban = staff
+    ? '<div class="banner warn"><b>Recount requested by ' + esc(r.approvalBy || 'the customer') + ' · ' + esc(fmtWhen(r.approvalAt)) + '</b>Their reason is in the updates below. Recount, then post results again.</div>'
+    : '<div class="banner info"><b>Recount requested</b>CEVA will recount and post new results here.</div>';
   else if(staff && r.lastReplyBy === 'customer') ban = '<div class="banner warn"><b>Customer replied</b>Their latest message is waiting for a response below.</div>';
-  else if(staff && isOverdue(r, now)) ban = '<div class="banner bad"><b>Overdue ' + esc(fmtDur(now - dueAt(r))) + '</b>Target was ' + esc(fmtWhen(dueAt(r))) + '.</div>';
+  else if(staff && isOverdue(r, now)) ban = '<div class="banner bad"><b>Overdue ' + esc(fmtDur(now - dueAt(r))) + '</b>Results were due ' + esc(fmtWhen(dueAt(r))) + '.</div>';
   $('#dBanner').innerHTML = ban;
-  const di = dueInfo(r, now), F = [];
+  const comp = $('#dComplete'); if(comp) comp.addEventListener('click', () => startComplete(r));
+
+  /* customer decision */
+  const deciding = !staff && r.status === 'review';
+  $('#dDecide').hidden = !deciding;
+  if(deciding){
+    $('#dDecideSum').textContent = s.off
+      ? s.off + ' of ' + s.n + ' lines have a difference (' + netText(r.results) + '). Approving lets CEVA post the difference in EWM. If something looks wrong, ask for a recount instead.'
+      : 'Every line matched. Approve to complete the count.';
+    const ap = $('#dApprove');
+    if(!ap.dataset.armed) ap.textContent = s.off ? 'Approve difference (' + netText(r.results) + ')' : 'Approve';
+  }
+
+  const F = [];
   if(staff) F.push(['Customer account', esc(r.account)]);
   F.push(['Requested by', esc(r.createdByName || '—') + (r.createdByEmail ? '<br><a href="mailto:' + esc(r.createdByEmail) + '">' + esc(r.createdByEmail) + '</a>' : '')]);
-  F.push(['Request type', esc(r.category || '—')]);
+  F.push(['Reason', esc(r.reason || '—')]);
   F.push(['Priority', prChip(r.priority)]);
-  F.push(['Submitted', esc(fmtWhen(r.createdAt)) + (r.source === 'ceva' ? '<br><span class="muted">Logged by CEVA</span>' : '')]);
-  if(r.neededBy) F.push(['Needed by', esc(fmtNeed(r.neededBy))]);
-  if(showTargets() && r.status !== 'closed') F.push(['Target', esc(fmtWhen(dueAt(r))) + '<br><span class="due ' + di.cls + '">' + esc(di.t) + '</span>']);
-  F.push(['Owner', r.owner ? esc(r.owner) : (staff ? '<span class="unassigned">Unassigned</span>' : '<span class="muted">Not assigned yet</span>')]);
-  if(staff) F.push(['First response', r.firstResponseAt ? esc(fmtDur(r.firstResponseAt - r.createdAt)) + ' after submit' : '<span class="muted">Not yet</span>']);
-  if(r.refs) F.push(['References', esc(r.refs)]);
+  F.push(['Requested', esc(fmtWhen(r.createdAt)) + (r.source === 'ceva' ? '<br><span class="muted">Logged by CEVA</span>' : '')]);
+  if(r.neededBy) F.push(['Results needed by', esc(fmtNeed(r.neededBy))]);
+  if(r.countedAt == null && r.status !== 'closed' && showTargets()){ const di = dueInfo(r, now); F.push(['Results due', esc(fmtWhen(dueAt(r))) + '<br><span class="due ' + di.cls + '">' + esc(di.t) + '</span>']); }
+  F.push(['Scheduled for', r.scheduledFor ? esc(fmtNeed(r.scheduledFor)) : '<span class="muted">Not yet</span>']);
+  F.push(['Counter', r.owner ? esc(r.owner) : (staff ? '<span class="unassigned">Unassigned</span>' : '<span class="muted">Not assigned yet</span>')]);
+  F.push(['EWM PI document', r.piDoc ? esc(r.piDoc) : '<span class="muted">—</span>']);
+  if(r.refs) F.push(['Reference', esc(r.refs)]);
+  if(r.countedAt != null){ const di = dueInfo(r, now); F.push(['Results posted', esc(fmtWhen(r.countedAt)) + (showTargets() ? '<br><span class="due ' + di.cls + '">' + (countedOnTime(r) ? 'On time' : 'After target') + '</span>' : '')]); }
+  if(staff) F.push(['First response', r.firstResponseAt ? esc(fmtDur(r.firstResponseAt - r.createdAt)) + ' after request' : '<span class="muted">Not yet</span>']);
   $('#dFacts').innerHTML = F.map(f => '<div><dt>' + f[0] + '</dt><dd>' + f[1] + '</dd></div>').join('');
-  $('#dDetailsSec').hidden = false;
-  $('#dDetails').textContent = r.details || 'No details given.';
+  $('#dDetailsSec').hidden = !r.details;
+  $('#dDetails').textContent = r.details;
+
+  /* count lines / results */
+  const editing = staff && r.status !== 'closed';
+  const counted = r.countedAt != null && r.results.length;
+  $('#dCountH').textContent = counted ? 'Results' : 'What to count · ' + plural(r.lines.length, 'line');
+  $('#dSum').innerHTML = counted ? sumLine(r.results) : (!staff ? '<span>Results show here once CEVA has counted.</span>' : '');
+  $('#dTable').hidden = editing;
+  if(!editing) $('#dTable').innerHTML = countTable(r);
+  $('#rForm').hidden = !editing;
+  if(editing && (!S.rDirty || S.rFor !== r.id)) fillResults(r);
+
   $('#mForm').hidden = !staff;
   if(staff && (!S.mDirty || S.mFor !== r.id)) fillManage(r);
   const closedCust = !staff && r.status === 'closed';
@@ -1113,8 +1445,8 @@ function renderDetail(){
 function composeHint(){
   const staff = isStaff();
   const internal = staff && document.querySelector('input[name="cMode"]:checked').value === 'internal';
-  $('#cText').placeholder = staff ? (internal ? 'Note for the CEVA team only…' : 'Update for the customer…') : 'Reply to CEVA…';
-  $('#cHint').textContent = !staff ? 'The CEVA team sees this right away.' : internal ? 'Only the CEVA team sees internal notes.' : 'The customer sees this on the request.';
+  $('#cText').placeholder = staff ? (internal ? 'Note for the CEVA team only…' : 'Update for the customer…') : 'Message CEVA about this count…';
+  $('#cHint').textContent = !staff ? 'The CEVA team sees this right away.' : internal ? 'Only the CEVA team sees internal notes.' : 'The customer sees this on the count.';
   $('#cGo').textContent = internal ? 'Add note' : 'Send';
 }
 document.querySelectorAll('input[name="cMode"]').forEach(r => r.addEventListener('change', composeHint));
@@ -1122,61 +1454,183 @@ document.querySelectorAll('input[name="cMode"]').forEach(r => r.addEventListener
 function renderThread(){
   const r = S.byId[S.open]; if(!r) return;
   const mySide = isStaff() ? 'ceva' : 'customer';
-  const items = S.notes.slice().sort((a, b) => a.at - b.at);
-  let h = '<div class="ev">Submitted by <b>' + esc(r.createdByName || r.createdByEmail || 'customer') + '</b> · ' + esc(fmtWhen(r.createdAt)) + '</div>';
+  const items = S.notes.slice();
+  if(r.approvalAt && r.approval === 'approved') items.push({kind:'status', at:r.approvalAt, text:'Difference approved by ' + (r.approvalBy || 'customer'), byName:''});
+  items.sort((a, b) => a.at - b.at);
+  let h = '<div class="ev">Requested by <b>' + esc(r.createdByName || r.createdByEmail || 'customer') + '</b> · ' + esc(plural(r.lines.length, 'line')) + ' · ' + esc(fmtWhen(r.createdAt)) + '</div>';
   items.forEach(n => {
     if(n.kind === 'status'){ const by = n.byName && !n.text.endsWith(n.byName) ? ' · ' + esc(n.byName) : ''; h += '<div class="ev"><span class="pre">' + esc(n.text) + '</span>' + by + ' · ' + esc(fmtWhen(n.at)) + '</div>'; return; }
     const who = n.internal ? 'Internal note' : n.side === 'ceva' ? 'CEVA' : (isStaff() ? r.account : 'You');
     h += '<div class="msg' + (n.internal ? ' internal' : n.side === mySide ? ' mine' : '') + '"><div class="m-h"><b>' + esc(n.byName || (n.side === 'ceva' ? 'CEVA team' : 'Customer')) + '</b><span>' + esc(who) + '</span><span>· ' + esc(fmtWhen(n.at)) + '</span></div><div class="m-t">' + esc(n.text) + '</div></div>';
   });
-  if(!items.length) h += '<div class="ev">' + (isStaff() ? 'No updates yet. Reply below, or set a status and owner above.' : 'No updates yet. The CEVA team will post here.') + '</div>';
+  if(!S.notes.length) h += '<div class="ev">' + (isStaff() ? 'No updates yet. Schedule it and assign a counter below, or reply to the customer.' : 'No updates yet. CEVA posts the schedule and results here.') + '</div>';
   $('#dThread').innerHTML = h;
 }
 
+/* results entry (CEVA) */
+function fillResults(r){
+  S.rFor = r.id; S.rDirty = false;
+  const rows = r.results.length ? r.results : r.lines.map(l => ({product:l.product, bin:l.bin, batch:l.batch, uom:l.uom, book:null, counted:null, recount:false, note:''}));
+  $('#rLines').innerHTML = headHTML(RES_COLS, '<span>Diff.</span>') + rows.map(resRowHTML).join('');
+  $('#rLines').querySelectorAll('.le-row').forEach(liveDiff);
+  $('#rLead').textContent = r.countedAt != null
+    ? 'Results posted ' + fmtWhen(r.countedAt) + '. Change them and post again if a recount finds something different.'
+    : 'Enter the EWM book qty and the counted qty for each line. Customer lines without a bin may need a row per bin; add them below.';
+  rSummary(); rErr('');
+  $('#rPost').textContent = r.countedAt != null ? 'Post updated results' : 'Post results';
+}
+function rErr(t){ const e = $('#rErr'); e.textContent = t || ''; e.hidden = !t; }
+function rSummary(){
+  const {rows} = readRows($('#rLines'), ['book', 'counted']);
+  const s = statsOf(rows);
+  $('#rSum').innerHTML = s.n ? sumLine(rows) + (s.n < rows.length ? '<span>' + (rows.length - s.n) + ' still to count</span>' : '') : '';
+}
+$('#rLines').addEventListener('input', e => { S.rDirty = true; const row = e.target.closest('.le-row'); if(row) liveDiff(row); rSummary(); });
+$('#rLines').addEventListener('change', () => { S.rDirty = true; });
+$('#rLines').addEventListener('click', e => {
+  if(!e.target.closest('[data-del]')) return;
+  e.target.closest('.le-row').remove(); S.rDirty = true; rSummary();
+});
+$('#rAdd').addEventListener('click', () => {
+  const box = $('#rLines');
+  if(box.querySelectorAll('.le-row').length >= MAX_RESULTS) return toast('Up to ' + MAX_RESULTS + ' result rows per count');
+  const last = box.querySelector('.le-row:last-child');
+  const seed = last ? {product:last.querySelector('[data-k="product"]').value, uom:last.querySelector('[data-k="uom"]').value} : {};
+  box.insertAdjacentHTML('beforeend', resRowHTML(seed));
+  box.querySelector('.le-row:last-child [data-k="bin"]').focus(); S.rDirty = true; liveDiff(box.querySelector('.le-row:last-child'));
+});
+$('#rUndo').addEventListener('click', () => { const r = S.byId[S.open]; if(r) fillResults(r); });
+function readResults(){
+  const {rows, errs} = readRows($('#rLines'), ['book', 'counted']);
+  return {rows:rows.map(x => ({product:str(x.product, 40), bin:str(x.bin, 18), batch:str(x.batch, 20), uom:str(x.uom, 6), book:x.book, counted:x.counted, recount:!!x.recount, note:str(x.note, 120)})), errs};
+}
+$('#rSave').addEventListener('click', () => {
+  const r = S.byId[S.open]; if(!r || !isStaff()) return;
+  const {rows, errs} = readResults();
+  if(errs.length) return rErr(errs[0]);
+  if(!rows.length) return rErr('Nothing to save yet.');
+  const now = Date.now();
+  const patch = {results:rows, updatedAt:now};
+  if(r.status === 'new' || r.status === 'scheduled') patch.status = 'counting';
+  if(!r.owner) patch.owner = me().name || '';
+  if(r.firstResponseAt == null) patch.firstResponseAt = now;
+  commit(S.store.write(r.id, patch, patch.status ? mkNote('Counting started', 'status') : null, false));
+  S.rDirty = false; rErr(''); toast('Counts saved on ' + ccNo(r.id) + '. The customer sees them once you post.');
+});
+$('#rForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const r = S.byId[S.open]; if(!r || !isStaff()) return;
+  const {rows, errs} = readResults();
+  if(errs.length) return rErr(errs[0]);
+  if(!rows.length) return rErr('Enter at least one counted line.');
+  const missing = rows.findIndex(x => x.book == null || x.counted == null);
+  if(missing >= 0) return rErr('Row ' + (missing + 1) + ' needs both the book qty and the counted qty before results can be posted. Save counts so far instead if you’re not done.');
+  const now = Date.now(), s = statsOf(rows), needOk = approvalOn() && s.off > 0;
+  const patch = {results:rows, countedAt:now, updatedAt:now, status:needOk ? 'review' : 'closed', approval:'', approvalBy:'', approvalAt:null, owner:r.owner || me().name || ''};
+  if(r.firstResponseAt == null) patch.firstResponseAt = now;
+  const summary = plural(s.n, 'line') + ', ' + (s.off ? s.off + ' with a difference, ' + netText(rows) : 'no difference');
+  if(!needOk){
+    patch.closedAt = now;
+    patch.resolution = s.off ? 'Counted ' + summary + '. Difference posted in EWM' + (r.piDoc ? ' (PI document ' + r.piDoc + ')' : '') + '.' : 'Counted ' + summary + '. Nothing to post.';
+  } else { patch.closedAt = null; patch.resolution = ''; }
+  commit(S.store.write(r.id, patch, mkNote('Results posted: ' + summary + (needOk ? '. Waiting for approval.' : '. Completed.'), 'status'), false));
+  S.rDirty = false; S.mDirty = false; rErr('');
+  toast(needOk ? 'Results posted. ' + r.account + ' can approve now.' : 'Results posted and count completed');
+});
+
+/* manage (CEVA) */
 function fillManage(r){
   S.mFor = r.id; S.mDirty = false;
   document.querySelector('input[name="mSt"][value="' + r.status + '"]').checked = true;
   $('#mRes').value = r.resolution; $('#mResWrap').hidden = r.status !== 'closed';
-  $('#mOwner').value = r.owner; $('#mPrio').value = r.priority;
-  const cats = types().slice(); if(r.category && !cats.includes(r.category)) cats.push(r.category);
-  $('#mCat').innerHTML = '<option value="">—</option>' + cats.map(t => '<option>' + esc(t) + '</option>').join('');
-  $('#mCat').value = r.category;
+  $('#mOwner').value = r.owner; $('#mPrio').value = r.priority; $('#mSched').value = r.scheduledFor; $('#mPi').value = r.piDoc;
+  const rs = reasons().slice(); if(r.reason && !rs.includes(r.reason)) rs.push(r.reason);
+  $('#mReason').innerHTML = '<option value="">—</option>' + rs.map(t => '<option>' + esc(t) + '</option>').join('');
+  $('#mReason').value = r.reason;
   $('#mNeed').value = r.neededBy; $('#mAcct').value = r.account;
   mErr('');
+}
+function suggestNote(r){
+  const s = statsOf(r.results);
+  if(!s.n) return '';
+  return s.off ? 'Difference of ' + netText(r.results).replace(/^net /, 'net ') + ' posted in EWM' + (r.piDoc ? ', PI document ' + r.piDoc : '') + '.' : 'No difference. Nothing to post.';
+}
+function startComplete(r){
+  document.querySelector('input[name="mSt"][value="closed"]').checked = true;
+  $('#mResWrap').hidden = false;
+  if(!$('#mRes').value.trim()) $('#mRes').value = suggestNote(r);
+  S.mDirty = true;
+  $('#mForm').scrollIntoView({behavior:'smooth', block:'center'});
+  setTimeout(() => $('#mRes').focus({preventScroll:true}), 300);
 }
 function mErr(t){ const e = $('#mErr'); e.textContent = t || ''; e.hidden = !t; }
 $('#mForm').addEventListener('input', () => { S.mDirty = true; });
 $('#mForm').addEventListener('change', e => {
   S.mDirty = true;
-  if(e.target.name === 'mSt'){ const c = e.target.value === 'closed'; $('#mResWrap').hidden = !c; if(c) setTimeout(() => $('#mRes').focus(), 20); }
+  if(e.target.name === 'mSt'){
+    const c = e.target.value === 'closed'; $('#mResWrap').hidden = !c;
+    const r = S.byId[S.open];
+    if(c && r && !$('#mRes').value.trim()) $('#mRes').value = suggestNote(r);
+    if(c) setTimeout(() => $('#mRes').focus(), 20);
+  }
 });
 $('#mUndo').addEventListener('click', () => { const r = S.byId[S.open]; if(r) fillManage(r); });
 $('#mForm').addEventListener('submit', e => {
   e.preventDefault();
   const r = S.byId[S.open]; if(!r || !isStaff()) return;
   const st = document.querySelector('input[name="mSt"]:checked').value;
-  const res = str($('#mRes').value, 2000), owner = str($('#mOwner').value, 60), prio = $('#mPrio').value;
-  const account = str($('#mAcct').value, 60), need = /^\d{4}-\d{2}-\d{2}$/.test($('#mNeed').value) ? $('#mNeed').value : '';
+  const res = str($('#mRes').value, 2000), owner = str($('#mOwner').value, 60), prio = $('#mPrio').value, pi = str($('#mPi').value, 60);
+  const account = str($('#mAcct').value, 60);
+  const dateOf = id => /^\d{4}-\d{2}-\d{2}$/.test($(id).value) ? $(id).value : '';
+  const need = dateOf('#mNeed'), sched = dateOf('#mSched');
   if(!account) return mErr('Enter the customer account.');
-  if(st === 'closed' && !res) return mErr('Add a resolution so the customer knows what was done.');
+  if(st === 'scheduled' && !sched) return mErr('Pick the date it’s scheduled for.');
+  if(st === 'closed' && !res) return mErr('Add a completion note so the customer knows what was done.');
+  if((st === 'review' || st === 'approved') && r.countedAt == null) return mErr('Post results before setting this status.');
   const now = Date.now();
-  const patch = {status:st, owner, priority:prio, category:str($('#mCat').value, 60), neededBy:need, account,
+  const patch = {status:st, owner, priority:prio, reason:str($('#mReason').value, 80), neededBy:need, scheduledFor:sched, piDoc:pi, account,
     resolution:st === 'closed' ? res : '', updatedAt:now};
   if(st === 'closed' && r.status !== 'closed') patch.closedAt = now;
   if(st !== 'closed') patch.closedAt = null;
   if(r.firstResponseAt == null && st !== 'new') patch.firstResponseAt = now;
   const ev = [];
-  if(st !== r.status) ev.push(st === 'closed' ? 'Closed: ' + res : r.status === 'closed' ? 'Reopened · ' + STATUS[st] : 'Status: ' + STATUS[st]);
-  else if(st === 'closed' && res !== r.resolution) ev.push('Resolution updated: ' + res);
-  if(owner !== r.owner && owner) ev.push('Assigned to ' + owner);
+  if(st !== r.status) ev.push(st === 'closed' ? 'Completed: ' + res : r.status === 'closed' ? 'Reopened · ' + STATUS[st] : 'Status: ' + STATUS[st]);
+  else if(st === 'closed' && res !== r.resolution) ev.push('Completion note updated: ' + res);
+  if(sched !== r.scheduledFor && sched) ev.push('Scheduled for ' + fmtNeed(sched));
+  if(owner !== r.owner && owner) ev.push('Counter: ' + owner);
+  if(pi !== r.piDoc && pi) ev.push('EWM PI document ' + pi);
   if(prio !== r.priority) ev.push('Priority: ' + PRIO[prio]);
   if(account !== r.account) ev.push('Moved to ' + account);
   const note = ev.length ? mkNote(ev.join(' · ').slice(0, 2000), 'status') : null;
   commit(S.store.write(r.id, patch, note, false));
   S.mDirty = false;
-  toast(st === 'closed' && r.status !== 'closed' ? 'Closed #' + r.id : 'Saved #' + r.id);
+  toast(st === 'closed' && r.status !== 'closed' ? 'Completed ' + ccNo(r.id) : 'Saved ' + ccNo(r.id));
 });
 function mkNote(text, kind){ const m = me(); return {text, at:Date.now(), by:m.user.uid, byName:m.name || '', side:isStaff() ? 'ceva' : 'customer', kind}; }
+
+/* customer decision */
+function disarm(b){ if(b){ delete b.dataset.armed; b.classList.remove('armed'); } }
+$('#dApprove').addEventListener('click', e => {
+  const b = e.currentTarget, r = S.byId[S.open]; if(!r || isStaff() || r.status !== 'review') return;
+  if(!b.dataset.armed){ b.dataset.armed = '1'; b.classList.add('armed'); b.textContent = 'Tap again to approve'; setTimeout(() => { disarm(b); renderDetail(); }, 4000); return; }
+  disarm(b);
+  const now = Date.now(), m = me();
+  commit(S.store.write(r.id, {status:'approved', approval:'approved', approvalBy:(m.name || m.user.email || 'Customer').slice(0, 60), approvalAt:now, updatedAt:now}, null, false));
+  toast('Approved. CEVA will post the difference in EWM.');
+});
+$('#dRecountBtn').addEventListener('click', () => { $('#dRecountBox').hidden = false; $('#dRecountText').focus(); });
+$('#dRecountX').addEventListener('click', () => { $('#dRecountBox').hidden = true; });
+$('#dRecountGo').addEventListener('click', () => {
+  const r = S.byId[S.open]; if(!r || isStaff() || r.status !== 'review') return;
+  const text = $('#dRecountText').value.trim().slice(0, 2000);
+  if(!text){ $('#dRecountText').focus(); return toast('Say what looks wrong so the counter knows where to look'); }
+  const now = Date.now(), m = me();
+  commit(S.store.write(r.id, {status:'counting', approval:'recount', approvalBy:(m.name || m.user.email || 'Customer').slice(0, 60), approvalAt:now, updatedAt:now, lastReplyAt:now, lastReplyBy:'customer'}, mkNote('Recount requested: ' + text, 'msg'), false));
+  $('#dRecountText').value = ''; $('#dRecountBox').hidden = true;
+  toast('Recount requested');
+});
+
+/* replies */
 $('#cForm').addEventListener('submit', e => {
   e.preventDefault();
   const r = S.byId[S.open]; if(!r) return;
@@ -1186,25 +1640,22 @@ $('#cForm').addEventListener('submit', e => {
   if(isStaff()){
     const internal = document.querySelector('input[name="cMode"]:checked').value === 'internal';
     let patch = null;
-    if(!internal){
-      patch = {lastReplyAt:now, lastReplyBy:'ceva', updatedAt:now};
-      if(r.firstResponseAt == null) patch.firstResponseAt = now;
-      if(r.status === 'new') patch.status = 'in_progress';
-    }
+    if(!internal){ patch = {lastReplyAt:now, lastReplyBy:'ceva', updatedAt:now}; if(r.firstResponseAt == null) patch.firstResponseAt = now; }
     commit(S.store.write(r.id, patch, mkNote(text, 'msg'), internal));
     toast(internal ? 'Note added' : 'Reply sent');
   } else {
     if(r.status === 'closed') return;
-    const patch = {lastReplyAt:now, lastReplyBy:'customer', updatedAt:now};
-    if(r.status === 'waiting') patch.status = 'in_progress';
-    commit(S.store.write(r.id, patch, mkNote(text, 'msg'), false));
+    commit(S.store.write(r.id, {lastReplyAt:now, lastReplyBy:'customer', updatedAt:now}, mkNote(text, 'msg'), false));
     toast('Sent to CEVA');
   }
   $('#cText').value = '';
 });
 $('#dFollow').addEventListener('click', () => {
   const r = S.byId[S.open]; if(!r) return;
-  S.prefill = {subject:('Follow-up to #' + r.id + ': ' + r.subject).slice(0, 120), refs:r.refs, category:r.category, details:''};
+  const src = r.results.length ? r.results : r.lines;
+  const seen = new Set(), lines = [];
+  src.forEach(x => { const l = {product:x.product, bin:x.bin, batch:x.batch, uom:x.uom, book:null}; const k = lineKey(l); if(!seen.has(k)){ seen.add(k); lines.push(l); } });
+  S.prefill = {subject:('Follow-up to ' + ccNo(r.id) + ': ' + r.subject).slice(0, 120), refs:r.refs, reason:r.reason, account:r.account, lines:lines.slice(0, MAX_LINES)};
   location.hash = 'new';
 });
 
@@ -1226,14 +1677,20 @@ function buckets(days){
   }
   return out;
 }
-function niceStep(max, ticks){
-  const raw = Math.max(1, max / ticks), p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p;
+function niceStep(range, ticks){
+  const raw = Math.max(1, range / ticks), p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p;
   return Math.max(1, (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p);
 }
 function table(head, rows, numCols){
   return '<table class="t"><thead><tr>' + head.map((h, i) => '<th' + (numCols.includes(i) ? ' class="n"' : '') + '>' + esc(h) + '</th>').join('') + '</tr></thead><tbody>' +
     rows.map(r => '<tr>' + r.map((c, i) => '<td' + (numCols.includes(i) ? ' class="n"' : '') + '>' + esc(c) + '</td>').join('') + '</tr>').join('') + '</tbody></table>';
 }
+const linesOf = L => L.flatMap(r => r.results.filter(isCounted));
+function accuracy(lines){
+  const s = statsOf(lines);
+  return {n:s.n, exact:s.n - s.off, line:s.n ? (s.n - s.off) / s.n : null, unit:s.book ? Math.max(0, 1 - s.abs / s.book) : (s.n ? (s.abs ? 0 : 1) : null), net:s.net, abs:s.abs};
+}
+const pct1 = v => v == null ? '—' : pctOf(v);
 function renderDash(){
   const staff = isStaff(), tgt = showTargets(), now = Date.now(), days = S.dashDays, start = now - days * DAY;
   $('#dPeriod').value = String(days);
@@ -1244,71 +1701,97 @@ function renderDash(){
   $('#dashLead').textContent = scopeName + ' · ' + pLabel.toLowerCase();
   $('#printLine').textContent = portalName() + ' · ' + scopeName + ' · ' + pLabel + ' · as of ' + fmtWhen(now);
   const open = base.filter(r => r.status !== 'closed');
-  const opened = base.filter(r => r.createdAt >= start);
-  const closed = base.filter(r => r.status === 'closed' && r.closedAt >= start);
+  const requested = base.filter(r => r.createdAt >= start);
+  const posted = base.filter(r => r.countedAt != null && r.countedAt >= start);
+  const completed = base.filter(r => r.status === 'closed' && r.closedAt >= start);
+  const acc = accuracy(linesOf(posted));
   const overdue = open.filter(r => isOverdue(r, now));
-  const waiting = open.filter(r => r.status === 'waiting');
-  const ontime = closed.filter(onTime).length;
-  const mClose = median(closed.map(r => r.closedAt - r.createdAt));
-  const mFirst = median(opened.filter(r => r.firstResponseAt).map(r => r.firstResponseAt - r.createdAt));
+  const awaiting = open.filter(r => r.status === 'review');
+  const ontime = posted.filter(countedOnTime).length;
+  const mRes = median(posted.map(r => r.countedAt - r.createdAt));
   const tile = (l, v, s) => '<div class="tile"><div class="l">' + l + '</div><div class="v">' + v + '</div>' + (s ? '<div class="s">' + s + '</div>' : '') + '</div>';
-  const heroSub = [tgt ? '<b>' + overdue.length + '</b> overdue' : '', '<b>' + waiting.length + '</b> ' + (staff ? 'waiting on customer' : 'waiting on you')].filter(Boolean).join(' · ');
-  $('#kpis').style.setProperty('--n', tgt ? 5 : 4);
+  const heroSub = [tgt ? '<b>' + overdue.length + '</b> overdue' : '', '<b>' + awaiting.length + '</b> ' + (staff ? 'awaiting approval' : 'need your approval')].filter(Boolean).join(' · ');
+  $('#kpis').style.setProperty('--n', tgt ? 6 : 5);
   $('#kpis').innerHTML =
-    '<div class="tile hero"><div class="l">Open now</div><div class="v">' + fmtNum(open.length) + '</div><div class="s">' + heroSub + '</div></div>' +
-    tile('Submitted', fmtNum(opened.length), pLabel) +
-    tile('Closed', fmtNum(closed.length), pLabel) +
-    (tgt ? tile('Closed on time', closed.length ? Math.round(ontime / closed.length * 100) + '%' : '—', closed.length ? ontime + ' of ' + closed.length : 'Nothing closed yet') : '') +
-    tile('Median time to close', mClose == null ? '—' : fmtDur(mClose), closed.length ? 'Submit to closed' : '') +
-    tile('Median first response', mFirst == null ? '—' : fmtDur(mFirst), 'Submit to first CEVA update');
+    '<div class="tile hero"><div class="l">Open counts</div><div class="v">' + fmtNum(open.length) + '</div><div class="s">' + heroSub + '</div></div>' +
+    tile('Counts completed', fmtNum(completed.length), pLabel) +
+    tile('Lines counted', fmtNum(acc.n), 'in ' + plural(posted.length, 'count')) +
+    tile('Line accuracy', pct1(acc.line), acc.n ? fmtNum(acc.exact) + ' of ' + fmtNum(acc.n) + ' lines matched' : 'No lines counted yet') +
+    tile('Unit accuracy', pct1(acc.unit), acc.n ? 'Net ' + signed(acc.net) + ' · ' + fmtQty(acc.abs) + ' units off' : '') +
+    (tgt ? tile('Results on time', posted.length ? pct(ontime, posted.length) : '—', posted.length ? ontime + ' of ' + posted.length : '') : '') +
+    tile('Median time to results', mRes == null ? '—' : fmtDur(mRes), 'Request to results posted');
 
   /* trend */
   const B = buckets(days);
-  const vOpen = B.map(b => base.filter(r => r.createdAt >= b.s && r.createdAt < b.e).length);
-  const vClose = B.map(b => base.filter(r => r.closedAt != null && r.closedAt >= b.s && r.closedAt < b.e).length);
-  const series = [{name:'Submitted', color:'var(--s1)', vals:vOpen}, {name:'Closed', color:'var(--s3)', vals:vClose}];
-  $('#trendSub').textContent = (days <= 31 ? 'Per day' : days <= 120 ? 'Per week' : 'Per month') + ' · ' + pLabel.toLowerCase();
+  const vReq = B.map(b => base.filter(r => r.createdAt >= b.s && r.createdAt < b.e).length);
+  const vDone = B.map(b => base.filter(r => r.closedAt != null && r.status === 'closed' && r.closedAt >= b.s && r.closedAt < b.e).length);
+  const series = [{name:'Requested', color:'var(--s1)', vals:vReq}, {name:'Completed', color:'var(--done)', vals:vDone}];
+  const per = days <= 31 ? 'Per day' : days <= 120 ? 'Per week' : 'Per month';
+  $('#trendSub').textContent = per + ' · ' + pLabel.toLowerCase();
   $('#trendLegend').innerHTML = series.map(s => '<span><i class="lk" style="background:' + s.color + '"></i>' + s.name + '</span>').join('');
-  lineChart($('#cTrend'), B, series, 'Requests submitted and closed ' + $('#trendSub').textContent.toLowerCase());
-  $('#tTrend').innerHTML = table([days <= 31 ? 'Day' : days <= 120 ? 'Week of' : 'Month', 'Submitted', 'Closed'], B.map((b, i) => [b.tip, vOpen[i], vClose[i]]), [1, 2]);
+  lineChart($('#cTrend'), B, series, {aria:'Counts requested and completed, ' + per.toLowerCase()});
+  $('#tTrend').innerHTML = table([days <= 31 ? 'Day' : days <= 120 ? 'Week of' : 'Month', 'Requested', 'Completed'], B.map((b, i) => [b.tip, vReq[i], vDone[i]]), [1, 2]);
+
+  /* accuracy trend */
+  const accB = B.map(b => accuracy(linesOf(base.filter(r => r.countedAt != null && r.countedAt >= b.s && r.countedAt < b.e))));
+  const accV = accB.map(a => a.line == null ? null : Math.min(a.line < 1 ? 99.9 : 100, Math.round(a.line * 1000) / 10));
+  const have = accV.filter(v => v != null);
+  $('#accSub').textContent = 'Lines where counted matched book · ' + per.toLowerCase();
+  if(have.length){
+    const lo = Math.min(...have), yMin = Math.max(0, Math.min(90, Math.floor((lo - 2) / 5) * 5));
+    lineChart($('#cAcc'), B, [{name:'Line accuracy', color:'var(--s1)', vals:accV}], {aria:'Line accuracy ' + per.toLowerCase(), yMin, yMax:100, fmt:v => (Math.round(v * 10) / 10) + '%', step:yMin >= 80 ? 5 : 10, single:true});
+  } else $('#cAcc').innerHTML = '<div class="cempty">No counts posted in this period.</div>';
+  $('#tAcc').innerHTML = table([days <= 31 ? 'Day' : days <= 120 ? 'Week of' : 'Month', 'Lines counted', 'Matched', 'Line accuracy', 'Unit accuracy'],
+    B.map((b, i) => [b.tip, accB[i].n, accB[i].exact, pct1(accB[i].line), pct1(accB[i].unit)]), [1, 2, 3, 4]);
 
   /* status */
-  const parts = [['new', 'New', 'var(--s1)'], ['in_progress', 'In progress', 'var(--s2)'], ['waiting', staff ? 'Waiting on customer' : 'Waiting on you', 'var(--s4)']]
-    .map(([k, l, c]) => ({name:l, v:open.filter(r => r.status === k).length, color:c}));
-  $('#statusSub').textContent = plural(open.length, 'open request');
+  const parts = [['new', 'Requested', 'var(--s1)'], ['scheduled', 'Scheduled', 'var(--s2)'], ['counting', 'Counting', 'var(--s3)'], ['review', staff ? 'Awaiting approval' : 'Needs your approval', 'var(--s4)', 1], ['approved', 'Approved', 'var(--s5)']]
+    .map(([k, l, c, dark]) => ({name:l, v:open.filter(r => r.status === k).length, color:c, dark}));
+  $('#statusSub').textContent = plural(open.length, 'open count');
   segBar($('#cStatus'), parts, open.length);
   $('#statusLegend').innerHTML = parts.map(p => '<span><i class="sw" style="background:' + p.color + '"></i>' + esc(p.name) + ' · ' + p.v + '</span>').join('');
 
   /* age */
   const ages = [['Under 1 day', 0, DAY], ['1 to 3 days', DAY, 3 * DAY], ['3 to 7 days', 3 * DAY, 7 * DAY], ['Over 7 days', 7 * DAY, Infinity]]
     .map(([l, a, b]) => ({label:l, v:open.filter(r => now - r.createdAt >= a && now - r.createdAt < b).length}));
-  hBars($('#cAge'), ages, open.length, 'No open requests.');
+  hBars($('#cAge'), ages, open.length, 'No open counts.');
 
-  /* type */
-  const byType = {};
-  opened.forEach(r => { const k = r.category || 'Not set'; byType[k] = (byType[k] || 0) + 1; });
-  let trows = Object.entries(byType).map(([label, v]) => ({label, v})).sort((a, b) => b.v - a.v || a.label.localeCompare(b.label));
-  if(trows.length > 8){ const rest = trows.slice(7).reduce((a, r) => a + r.v, 0); trows = trows.slice(0, 7).concat([{label:'Everything else', v:rest}]); }
-  $('#typeSub').textContent = 'Submitted · ' + pLabel.toLowerCase();
-  hBars($('#cType'), trows, opened.length, 'Nothing submitted in this period.');
-  $('#tType').innerHTML = table(['Type', 'Submitted', 'Share'], trows.map(r => [r.label, r.v, Math.round(r.v / Math.max(1, opened.length) * 100) + '%']), [1, 2]);
+  /* largest differences by product */
+  const byP = {};
+  posted.forEach(r => r.results.filter(isCounted).forEach(x => {
+    const k = x.product + (x.uom ? ' · ' + x.uom : '');
+    const o = byP[k] = byP[k] || {label:k, net:0, abs:0, lines:0, counts:new Set()};
+    const d = round3(x.counted - x.book); o.net = round3(o.net + d); o.abs = round3(o.abs + Math.abs(d)); o.lines++; o.counts.add(r.id);
+  }));
+  const vrows = Object.values(byP).filter(o => o.abs > 0).sort((a, b) => b.abs - a.abs || a.label.localeCompare(b.label));
+  $('#varSub').textContent = 'Sum of differences in counts posted · ' + pLabel.toLowerCase() + '. Value is net; bar is total units off.';
+  hBars($('#cVar'), vrows.slice(0, 8).map(o => ({label:o.label, v:o.abs, text:signed(o.net), tip:'Net ' + signed(o.net) + ' · ' + fmtQty(o.abs) + ' units off · ' + plural(o.counts.size, 'count')})), 1, acc.n ? 'Every counted line matched in this period.' : 'No counts posted in this period.');
+  $('#tVar').innerHTML = table(['Product · UoM', 'Net difference', 'Units off', 'Lines', 'Counts'], vrows.slice(0, 50).map(o => [o.label, signed(o.net), fmtQty(o.abs), o.lines, o.counts.size]), [1, 2, 3, 4]);
+
+  /* reasons */
+  const byR = {};
+  requested.forEach(r => { const k = r.reason || 'Not given'; byR[k] = (byR[k] || 0) + 1; });
+  let rrows = Object.entries(byR).map(([label, v]) => ({label, v})).sort((a, b) => b.v - a.v || a.label.localeCompare(b.label));
+  if(rrows.length > 8){ const rest = rrows.slice(7).reduce((a, r) => a + r.v, 0); rrows = rrows.slice(0, 7).concat([{label:'Everything else', v:rest}]); }
+  $('#reasonSub').textContent = 'Requested · ' + pLabel.toLowerCase();
+  hBars($('#cReason'), rrows, requested.length, 'No counts requested in this period.');
 
   /* per account */
   const showAcct = staff && !S.dashAcct && accounts().length > 1;
   $('#ccAcct').hidden = !showAcct;
   if(showAcct){
-    $('#acctSub').textContent = 'Submitted, closed, on-time and time to close are for ' + pLabel.toLowerCase() + '. Open and overdue are right now.';
+    $('#acctSub').textContent = 'Requested, lines, accuracy, on-time and time to results are for ' + pLabel.toLowerCase() + '. Open and overdue are right now.';
     const rows = accounts().map(a => {
       const L = S.reqs.filter(r => r.account === a);
-      const op = L.filter(r => r.status !== 'closed'), cl = L.filter(r => r.status === 'closed' && r.closedAt >= start);
-      const ot = cl.filter(onTime).length, mc = median(cl.map(r => r.closedAt - r.createdAt));
-      return {a, sub:L.filter(r => r.createdAt >= start).length, cl:cl.length, op:op.length, od:op.filter(r => isOverdue(r, now)).length, ot:cl.length ? Math.round(ot / cl.length * 100) + '%' : '—', mc:mc == null ? '—' : fmtDur(mc)};
-    }).sort((x, y) => y.op - x.op || y.sub - x.sub);
-    $('#tAcct').innerHTML = '<table class="t"><thead><tr><th>Account</th><th class="n">Submitted</th><th class="n">Closed</th><th class="n">Open now</th><th class="n">Overdue</th><th class="n">On time</th><th class="n">Median close</th></tr></thead><tbody>' +
-      rows.map(r => '<tr><td>' + esc(r.a) + '</td><td class="n">' + r.sub + '</td><td class="n">' + r.cl + '</td><td class="n">' + r.op + '</td><td class="n' + (r.od ? ' late' : '') + '">' + r.od + '</td><td class="n">' + r.ot + '</td><td class="n">' + r.mc + '</td></tr>').join('') + '</tbody></table>';
+      const op = L.filter(r => r.status !== 'closed'), po = L.filter(r => r.countedAt != null && r.countedAt >= start);
+      const ac = accuracy(linesOf(po)), ot = po.filter(countedOnTime).length, mr = median(po.map(r => r.countedAt - r.createdAt));
+      return {a, req:L.filter(r => r.createdAt >= start).length, lines:ac.n, la:pct1(ac.line), ua:pct1(ac.unit), net:ac.n ? signed(ac.net) : '—', op:op.length, od:op.filter(r => isOverdue(r, now)).length, ot:po.length ? pct(ot, po.length) : '—', mr:mr == null ? '—' : fmtDur(mr)};
+    }).sort((x, y) => y.op - x.op || y.req - x.req);
+    $('#tAcct').innerHTML = '<table class="t"><thead><tr><th>Account</th><th class="n">Requested</th><th class="n">Lines counted</th><th class="n">Line accuracy</th><th class="n">Unit accuracy</th><th class="n">Net difference</th><th class="n">Open now</th><th class="n">Overdue</th><th class="n">On time</th><th class="n">Median to results</th></tr></thead><tbody>' +
+      rows.map(r => '<tr><td>' + esc(r.a) + '</td><td class="n">' + r.req + '</td><td class="n">' + fmtNum(r.lines) + '</td><td class="n">' + r.la + '</td><td class="n">' + r.ua + '</td><td class="n">' + r.net + '</td><td class="n">' + r.op + '</td><td class="n' + (r.od ? ' late' : '') + '">' + r.od + '</td><td class="n">' + r.ot + '</td><td class="n">' + r.mr + '</td></tr>').join('') + '</tbody></table>';
   }
 }
-$('#dPeriod').addEventListener('change', e => { S.dashDays = Number(e.target.value) || 90; try{ localStorage.setItem('reqDashDays', String(S.dashDays)); }catch(_){} renderDash(); });
+$('#dPeriod').addEventListener('change', e => { S.dashDays = Number(e.target.value) || 90; try{ localStorage.setItem('ccDashDays', String(S.dashDays)); }catch(_){} renderDash(); });
 $('#dAcct').addEventListener('change', e => { S.dashAcct = e.target.value; renderDash(); });
 $('#btnPrint').addEventListener('click', () => window.print());
 
@@ -1327,36 +1810,46 @@ function showTip(html, x, y){
 function hideTip(){ tip.hidden = true; }
 function tipRow(color, val, name, line){ return '<div class="tr"><i style="background:' + color + (line ? '' : ';height:10px;width:10px;border-radius:2px') + '"></i><b>' + esc(val) + '</b><s>' + esc(name) + '</s></div>'; }
 
-function lineChart(el, B, series, aria){
-  const W = Math.max(280, el.clientWidth || 0); if(!el.clientWidth) return;
-  const H = 240, ml = 36, mr = 92, mt = 12, mb = 30, pw = W - ml - mr, ph = H - mt - mb, n = B.length;
-  const max = Math.max(1, ...series.flatMap(s => s.vals));
-  const step = niceStep(max, 4), top = Math.ceil(max / step) * step;
+/* Line chart. Values can be null (no data that period): the line breaks there. */
+function lineChart(el, B, series, opt){
+  opt = opt || {};
+  if(!el.clientWidth) return;
+  const W = Math.max(280, el.clientWidth), H = 240, ml = 40, mr = opt.single ? 56 : 96, mt = 12, mb = 30, pw = W - ml - mr, ph = H - mt - mb, n = B.length;
+  const fmt = opt.fmt || fmtNum;
+  const all = series.flatMap(s => s.vals).filter(v => v != null);
+  const yMin = opt.yMin != null ? opt.yMin : 0;
+  const step = opt.step || niceStep(Math.max(1, (opt.yMax != null ? opt.yMax : Math.max(1, ...all)) - yMin), 4);
+  const top = opt.yMax != null ? opt.yMax : yMin + Math.ceil((Math.max(1, ...all) - yMin) / step) * step;
   const X = i => ml + (n === 1 ? pw / 2 : i * pw / (n - 1));
-  const Y = v => mt + ph - v / top * ph;
+  const Y = v => mt + ph - (v - yMin) / (top - yMin) * ph;
   let g = '';
-  for(let v = 0; v <= top; v += step){ const y = Y(v).toFixed(1); g += '<line class="' + (v === 0 ? 'base' : 'grid') + '" x1="' + ml + '" x2="' + (ml + pw) + '" y1="' + y + '" y2="' + y + '"/><text class="yt" x="' + (ml - 8) + '" y="' + y + '" text-anchor="end" dominant-baseline="middle">' + fmtNum(v) + '</text>'; }
+  for(let v = yMin; v <= top + 1e-9; v += step){ const y = Y(v).toFixed(1); g += '<line class="' + (v === yMin ? 'base' : 'grid') + '" x1="' + ml + '" x2="' + (ml + pw) + '" y1="' + y + '" y2="' + y + '"/><text class="yt" x="' + (ml - 8) + '" y="' + y + '" text-anchor="end" dominant-baseline="middle">' + esc(opt.fmt ? fmt(v) : fmtNum(v)) + '</text>'; }
   const every = Math.max(1, Math.ceil(n / Math.max(2, Math.floor(pw / 64))));
   for(let i = 0; i < n; i++) if((n - 1 - i) % every === 0) g += '<text class="xt" x="' + X(i).toFixed(1) + '" y="' + (H - 8) + '" text-anchor="middle">' + esc(B[i].label) + '</text>';
-  series.forEach(s => { g += '<path d="' + s.vals.map((v, i) => (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1)).join('') + '" fill="none" style="stroke:' + s.color + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>'; });
-  const ends = series.map(s => ({s, y:Y(s.vals[n - 1])}));
+  series.forEach(s => {
+    let d = '', pen = false;
+    s.vals.forEach((v, i) => { if(v == null){ pen = false; return; } d += (pen ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1); pen = true; });
+    g += '<path d="' + d + '" fill="none" style="stroke:' + s.color + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+    s.vals.forEach((v, i) => { const lone = v != null && (i === 0 || s.vals[i - 1] == null) && (i === n - 1 || s.vals[i + 1] == null); if(lone) g += '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(v).toFixed(1) + '" r="3" style="fill:' + s.color + '"/>'; });
+  });
+  const ends = series.map(s => { let i = s.vals.length - 1; while(i >= 0 && s.vals[i] == null) i--; return {s, i, y:i >= 0 ? Y(s.vals[i]) : null}; }).filter(e => e.i >= 0);
   const apart = ends.length < 2 || Math.abs(ends[0].y - ends[1].y) >= 16;
   ends.forEach(e => {
-    g += '<circle cx="' + X(n - 1).toFixed(1) + '" cy="' + e.y.toFixed(1) + '" r="4" style="fill:' + e.s.color + ';stroke:var(--panel)" stroke-width="2"/>';
-    if(apart) g += '<text class="el" x="' + (X(n - 1) + 10).toFixed(1) + '" y="' + e.y.toFixed(1) + '" dominant-baseline="middle">' + esc(e.s.name) + ' ' + fmtNum(e.s.vals[n - 1]) + '</text>';
+    g += '<circle cx="' + X(e.i).toFixed(1) + '" cy="' + e.y.toFixed(1) + '" r="4" style="fill:' + e.s.color + ';stroke:var(--panel)" stroke-width="2"/>';
+    if(apart) g += '<text class="el" x="' + (X(e.i) + 10).toFixed(1) + '" y="' + e.y.toFixed(1) + '" dominant-baseline="middle">' + esc((opt.single ? '' : e.s.name + ' ') + fmt(e.s.vals[e.i])) + '</text>';
   });
   g += '<line class="xh" x1="0" x2="0" y1="' + mt + '" y2="' + (mt + ph) + '" visibility="hidden"/>';
   series.forEach((s, k) => { g += '<circle class="xd" data-k="' + k + '" r="4" style="fill:' + s.color + ';stroke:var(--panel)" stroke-width="2" visibility="hidden"/>'; });
   g += '<rect x="' + ml + '" y="' + mt + '" width="' + pw + '" height="' + ph + '" fill="transparent"/>';
-  el.innerHTML = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" tabindex="0" aria-label="' + esc(aria) + '. Use the arrow keys to step through, or open Show the numbers.">' + g + '</svg>';
+  el.innerHTML = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" tabindex="0" aria-label="' + esc(opt.aria || '') + '. Use the arrow keys to step through, or open Show the numbers.">' + g + '</svg>';
   const svg = el.firstChild, xh = svg.querySelector('.xh'), dots = svg.querySelectorAll('.xd');
   let cur = -1;
   const show = (i, cx, cy) => {
     cur = i; const x = X(i);
     xh.setAttribute('x1', x); xh.setAttribute('x2', x); xh.setAttribute('visibility', 'visible');
-    dots.forEach((d, k) => { d.setAttribute('cx', x); d.setAttribute('cy', Y(series[k].vals[i])); d.setAttribute('visibility', 'visible'); });
+    dots.forEach((d, k) => { const v = series[k].vals[i]; if(v == null){ d.setAttribute('visibility', 'hidden'); return; } d.setAttribute('cx', x); d.setAttribute('cy', Y(v)); d.setAttribute('visibility', 'visible'); });
     const rect = svg.getBoundingClientRect();
-    showTip('<div class="tl">' + esc(B[i].tip) + '</div>' + series.map(s => tipRow(s.color, fmtNum(s.vals[i]), s.name, true)).join(''),
+    showTip('<div class="tl">' + esc(B[i].tip) + '</div>' + series.map(s => tipRow(s.color, s.vals[i] == null ? '—' : fmt(s.vals[i]), s.name, true)).join(''),
       cx != null ? cx : rect.left + x, cy != null ? cy : rect.top + mt + 20);
   };
   const hide = () => { cur = -1; xh.setAttribute('visibility', 'hidden'); dots.forEach(d => d.setAttribute('visibility', 'hidden')); hideTip(); };
@@ -1373,12 +1866,13 @@ function lineChart(el, B, series, aria){
     else if(e.key === 'Escape') hide();
   });
 }
+/* Horizontal bars. rows: {label, v, text?, tip?} — text replaces the value at the bar tip, tip the tooltip detail. */
 function hBars(el, rows, total, empty){
   if(!rows.length || !total){ el.innerHTML = '<div class="cempty">' + esc(empty) + '</div>'; return; }
   const max = Math.max(1, ...rows.map(r => r.v));
   el.innerHTML = '<div class="hbars" role="list">' + rows.map((r, i) =>
-    '<div class="hb" role="listitem" tabindex="0" data-i="' + i + '" aria-label="' + esc(r.label + ': ' + r.v) + '"><span class="hb-l">' + esc(r.label) + '</span><span class="hb-t"><span class="hb-b" style="--f:' + (r.v / max).toFixed(4) + '"></span><span class="hb-v">' + fmtNum(r.v) + '</span></span></div>').join('') + '</div>';
-  const tipFor = (i, x, y) => { const r = rows[i]; showTip('<div class="tl">' + esc(r.label) + '</div>' + tipRow('var(--s1)', fmtNum(r.v), Math.round(r.v / total * 100) + '% of ' + fmtNum(total)), x, y); };
+    '<div class="hb" role="listitem" tabindex="0" data-i="' + i + '" aria-label="' + esc(r.label + ': ' + (r.text || r.v) + (r.tip ? ', ' + r.tip : '')) + '"><span class="hb-l">' + esc(r.label) + '</span><span class="hb-t"><span class="hb-b" style="--f:' + (r.v / max).toFixed(4) + '"></span><span class="hb-v">' + esc(r.text || fmtNum(r.v)) + '</span></span></div>').join('') + '</div>';
+  const tipFor = (i, x, y) => { const r = rows[i]; showTip('<div class="tl">' + esc(r.label) + '</div>' + tipRow('var(--s1)', r.text || fmtNum(r.v), r.tip || (Math.round(r.v / total * 100) + '% of ' + fmtNum(total))), x, y); };
   el.querySelectorAll('.hb').forEach(b => {
     const i = Number(b.dataset.i);
     b.addEventListener('pointermove', e => tipFor(i, e.clientX, e.clientY));
@@ -1388,10 +1882,10 @@ function hBars(el, rows, total, empty){
   });
 }
 function segBar(el, parts, total){
-  if(!total){ el.innerHTML = '<div class="cempty">No open requests. Everything is closed.</div>'; return; }
+  if(!total){ el.innerHTML = '<div class="cempty">No open counts. Everything is complete.</div>'; return; }
   const shown = parts.filter(p => p.v > 0);
   el.innerHTML = '<div class="seg" role="img" aria-label="' + esc(parts.map(p => p.name + ' ' + p.v).join(', ')) + '">' +
-    shown.map((p, i) => '<span class="sg" tabindex="0" data-i="' + i + '" aria-label="' + esc(p.name + ': ' + p.v + ', ' + Math.round(p.v / total * 100) + '%') + '" style="flex:' + p.v + ' 1 0;background:' + p.color + '"><b>' + p.v + '</b></span>').join('') + '</div>';
+    shown.map((p, i) => '<span class="sg' + (p.dark ? ' dark-ink' : '') + '" tabindex="0" data-i="' + i + '" aria-label="' + esc(p.name + ': ' + p.v + ', ' + Math.round(p.v / total * 100) + '%') + '" style="flex:' + p.v + ' 1 0;background:' + p.color + '"><b>' + p.v + '</b></span>').join('') + '</div>';
   el.querySelectorAll('.sg').forEach(s => {
     const b = s.querySelector('b'); if(b.offsetWidth + 14 > s.clientWidth) b.hidden = true;
     const p = shown[Number(s.dataset.i)];
@@ -1416,26 +1910,29 @@ function renderSettings(force){
   $('#setPortal').hidden = !admin; $('#setPeople').hidden = !admin;
   $('#setPreview').hidden = S.demo;
   if(admin){
-    const c = S.config, t = c.targets || {};
+    const c = S.config;
     setVal($('#sName'), str(c.portalName, 60), force);
-    setVal($('#sTypes'), types().join('\n'), force);
+    setVal($('#sReasons'), reasons().join('\n'), force);
     setVal($('#sTU'), String(targetH('urgent')), force); setVal($('#sTH'), String(targetH('high')), force); setVal($('#sTN'), String(targetH('normal')), force);
     setVal($('#sOwners'), (Array.isArray(c.owners) ? c.owners : []).join('\n'), force);
     if(force || !$('#sShow').dataset.dirty) $('#sShow').checked = c.showTargets !== false;
+    if(force || !$('#sApprove').dataset.dirty) $('#sApprove').checked = c.approvalRequired !== false;
     renderPeople();
   }
 }
 $('#setPortal').addEventListener('input', e => { e.target.dataset.dirty = '1'; });
+$('#setPortal').addEventListener('change', e => { e.target.dataset.dirty = '1'; });
 $('#setPortal').addEventListener('submit', e => {
   e.preventDefault();
-  const lines = v => [...new Set(v.split('\n').map(s => str(s, 60)).filter(Boolean))];
+  const lines = (v, n) => [...new Set(v.split('\n').map(s => str(s, n)).filter(Boolean))];
   const tg = {urgent:Number($('#sTU').value), high:Number($('#sTH').value), normal:Number($('#sTN').value)};
   const err = $('#sErr');
   if(Object.values(tg).some(v => !(v >= 1 && v <= 2000))){ err.textContent = 'Targets must be between 1 and 2,000 hours.'; err.hidden = false; return; }
-  const ty = lines($('#sTypes').value).slice(0, 40);
-  if(!ty.length){ err.textContent = 'Add at least one request type.'; err.hidden = false; return; }
+  const rs = lines($('#sReasons').value, 80).slice(0, 40);
+  if(!rs.length){ err.textContent = 'Add at least one count reason.'; err.hidden = false; return; }
   err.hidden = true;
-  commit(S.store.saveConfig({portalName:str($('#sName').value, 60), types:ty, targets:tg, owners:lines($('#sOwners').value).slice(0, 100), showTargets:$('#sShow').checked, updatedAt:Date.now()}));
+  commit(S.store.saveConfig({portalName:str($('#sName').value, 60), reasons:rs, targets:tg, owners:lines($('#sOwners').value, 60).slice(0, 100),
+    showTargets:$('#sShow').checked, approvalRequired:$('#sApprove').checked, updatedAt:Date.now()}));
   $$('#setPortal [data-dirty]').forEach(x => { delete x.dataset.dirty; });
   toast('Portal settings saved');
 });
@@ -1447,7 +1944,7 @@ $('#sAlerts').addEventListener('change', async e => {
     if(p === 'default'){ try{ p = await Notification.requestPermission(); }catch(_){} }
     if(p !== 'granted'){ e.target.checked = false; return toast('Notifications are blocked for this site in the browser settings.'); }
   }
-  try{ localStorage.setItem('reqAlerts', on ? '1' : '0'); }catch(_){}
+  try{ localStorage.setItem('ccAlerts', on ? '1' : '0'); }catch(_){}
   toast(on ? 'Desktop notifications on' : 'Desktop notifications off');
 });
 $('#acctOut').addEventListener('click', () => { if(S.fb) S.fb.F.signOut(S.fb.auth); });
@@ -1506,7 +2003,7 @@ $('#setPeople').addEventListener('click', e => {
     const p = S.people.find(x => x.id === t.dataset.pedit); if(!p) return;
     $('#addPerson').open = true;
     $('#pfUid').value = p.id; $('#pfName').value = str(p.name, 60); $('#pfAcct').value = str(p.account, 60);
-    const r = document.querySelector('input[name="pfRole"][value="' + (ROLE_LABEL[p.role] ? p.role : 'customer') + '"]'); r.checked = true; pfRoleUI();
+    document.querySelector('input[name="pfRole"][value="' + (ROLE_LABEL[p.role] ? p.role : 'customer') + '"]').checked = true; pfRoleUI();
     pfErr(''); $('#pfName').focus(); return;
   }
   if(t.dataset.pdel){
@@ -1556,7 +2053,7 @@ function applyVisibility(){
   $('#gate').hidden = ready; $('#main').hidden = !ready;
   $('#demoBar').hidden = !S.demo;
   if(S.demo) document.querySelector('input[name="demoAs"][value="' + S.demoAs + '"]').checked = true;
-  if(!ready){ closeDetailUI(); document.title = 'Customer Requests'; }
+  if(!ready){ closeDetailUI(); document.title = 'Cycle Counts'; }
 }
 function showGate(state, msg){
   S.gate = state;
@@ -1567,7 +2064,7 @@ function showGate(state, msg){
   $('#gSignup').hidden = state !== 'signup';
   $('#gReset').hidden = state !== 'reset';
   $('#gPending').hidden = state !== 'pending';
-  $('#gTitle').textContent = state === 'signup' ? 'Create an account' : state === 'reset' ? 'Reset password' : state === 'pending' ? 'Almost there' : 'Customer Requests';
+  $('#gTitle').textContent = state === 'signup' ? 'Create an account' : state === 'reset' ? 'Reset password' : state === 'pending' ? 'Almost there' : 'Cycle Counts';
   if(state === 'pending') renderPending();
   applyVisibility();
 }
@@ -1669,85 +2166,102 @@ function makeDemo(){
   let seed = 7331;
   const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
   const pick = a => a[Math.floor(rnd() * a.length)];
+  const int = (a, b) => a + Math.floor(rnd() * (b - a + 1));
   const digits = k => { let s = ''; for(let i = 0; i < k; i++) s += Math.floor(rnd() * 10); return s; };
+  const wpick = list => { const tot = list.reduce((a, x) => a + x[1], 0); let r = rnd() * tot; for(const x of list){ r -= x[1]; if(r <= 0) return x[0]; } return list[0][0]; };
   const now = Date.now();
+  const bin = () => pick(['A', 'B', 'C', 'D', 'E']) + '-' + pad(int(1, 24)) + '-' + pad(int(1, 6));
+  const mkProducts = (prefix, n, batches, uoms) => Array.from({length:n}, () => ({product:prefix + digits(prefix.length > 3 ? 4 : 6), bin:bin(), uom:pick(uoms), batches:batches ? [batches() , batches()] : null}));
   const ACC = [
-    {a:'Northwind Apparel', w:5, people:[['Dana Lee', 'dana.lee@northwind.example'], ['Sam Ortiz', 'sam.ortiz@northwind.example']]},
-    {a:'Contoso Medical', w:3, people:[['Priya Shah', 'pshah@contoso.example'], ['Ken Adams', 'kadams@contoso.example']]},
-    {a:'Fabrikam Foods', w:2, people:[['Lena Fischer', 'lfischer@fabrikam.example']]}
+    {a:'Northwind Apparel', w:5, people:[['Dana Lee', 'dana.lee@northwind.example'], ['Sam Ortiz', 'sam.ortiz@northwind.example']], prods:mkProducts('NW', 40, null, ['EA'])},
+    {a:'Contoso Medical', w:3, people:[['Priya Shah', 'pshah@contoso.example'], ['Ken Adams', 'kadams@contoso.example']], prods:mkProducts('CM-', 30, () => 'B' + digits(6), ['EA', 'BX'])},
+    {a:'Fabrikam Foods', w:2, people:[['Lena Fischer', 'lfischer@fabrikam.example']], prods:mkProducts('FF', 30, () => 'L26' + pad(int(1, 12)) + pad(int(1, 28)), ['CS'])}
   ];
   const OWN = ['K. Bell', 'A. Ortiz', 'M. Tran', 'J. Ruiz'];
-  const T = {
-    'Order change or expedite':[() => 'Expedite PO 45000' + digits(5) + ' to ship today', () => 'Add 2 cases of SKU ' + digits(5) + ' to order 778' + digits(4), () => 'Change ship-to address on order 778' + digits(4), () => 'Cancel order 778' + digits(4) + ' before it picks'],
-    'Inventory question or adjustment':[() => 'Cycle count variance on SKU ' + digits(5), () => 'Confirm on-hand for SKU ' + digits(5) + ' before promo', () => 'Lot ' + digits(4) + 'A showing on hold'],
-    'Shipping or carrier issue':[() => 'Tracking not updating on BOL 3' + digits(4), () => 'Carrier missed pickup window', () => 'Need LTL quote for 6 pallets to Dallas'],
-    'Receiving or ASN':[() => 'ASN 77' + digits(3) + ' received short 3 cartons', () => 'Prioritize container MSKU ' + digits(7), () => 'Receiving appointment needed for Thursday'],
-    'Returns (RMA)':[() => 'Process RMA 10' + digits(3) + ', 14 units', () => 'Disposition for returned damaged units'],
-    'Damage or shortage claim':[() => 'Damaged pallet on order 778' + digits(4), () => 'Shortage claim: order 778' + digits(4) + ' short 2 cases'],
-    'Billing or invoice':[() => 'Question on last month’s storage invoice', () => 'Accessorial charge on invoice 55' + digits(3)],
-    'Report or data request':[() => 'Weekly inventory aging report', () => 'On-time ship report for last quarter'],
-    'Special project or value-added service':[() => 'Kit 500 holiday gift sets', () => 'Relabel 1,200 units for retail compliance'],
-    'Other':[() => 'Contact for the new site walk-through']
-  };
-  const TW = [['Order change or expedite', 6], ['Inventory question or adjustment', 4], ['Shipping or carrier issue', 4], ['Receiving or ASN', 3], ['Returns (RMA)', 2], ['Damage or shortage claim', 2], ['Billing or invoice', 2], ['Report or data request', 2], ['Special project or value-added service', 1], ['Other', 1]];
-  const RES = ['Done. Updated in the WMS and confirmed with the floor.', 'Shipped today on FedEx Freight, PRO 22' + digits(5) + '.', 'Recounted: on-hand matches the system now. Adjustment posted.', 'Credit issued on the next invoice.', 'Claim filed with the carrier; photos attached to the claim.', 'Report scheduled every Monday at 7 AM to your inbox.', 'Released from hold after QA sign-off.'];
-  const wpick = list => { const tot = list.reduce((a, x) => a + x[1], 0); let r = rnd() * tot; for(const x of list){ r -= x[1]; if(r <= 0) return x[0]; } return list[0][0]; };
-  const ages = [];
-  for(let i = 0; i < 150; i++) ages.push(Math.pow(rnd(), 1.25) * 200 * DAY + 2 * HOUR);
-  ages.sort((a, b) => b - a);
+  const RW = [[DEFAULT_REASONS[0], 6], [DEFAULT_REASONS[1], 4], [DEFAULT_REASONS[2], 2], [DEFAULT_REASONS[3], 2], [DEFAULT_REASONS[4], 1.5], [DEFAULT_REASONS[5], 1.5], [DEFAULT_REASONS[6], 2], [DEFAULT_REASONS[7], 3]];
+  const NOTES = ['Found 2 in overflow bin.', 'Recounted by second counter, same result.', 'Damaged units moved to blocked stock.', 'Pick face short, reserve full.', 'Mixed batch in bin.'];
   const reqs = {}, notes = {};
   let n = 1000, nid = 0;
   const addNote = (id, o) => { (notes[id] = notes[id] || []).push(Object.assign({id:'d' + (++nid), internal:false, kind:'msg', by:'demo', byName:'', side:'ceva'}, o)); };
+  const dayOf = ms => ymd(new Date(ms));
+  const mkLines = (acc, k) => {
+    const out = [], used = new Set();
+    for(let i = 0; i < k; i++){
+      const p = pick(acc.prods); if(used.has(p.product)) continue; used.add(p.product);
+      out.push({product:p.product, bin:rnd() < .7 ? p.bin : '', batch:p.batches && rnd() < .6 ? pick(p.batches) : '', uom:p.uom, book:rnd() < .55 ? int(6, 400) : null});
+    }
+    return out;
+  };
+  const mkResults = (lines, off) => {
+    const out = lines.map(l => {
+      const book = l.book != null && rnd() < .7 ? l.book : int(6, 400);
+      const miss = off != null ? off.includes(l.product) : rnd() < .035;
+      const d = miss ? (rnd() < .7 ? -int(1, 12) : int(1, 6)) : 0;
+      return {product:l.product, bin:l.bin || bin(), batch:l.batch, uom:l.uom, book, counted:Math.max(0, book + d), recount:d !== 0 && rnd() < .75, note:d !== 0 && rnd() < .4 ? pick(NOTES) : ''};
+    });
+    if(off == null && rnd() < .04 && out.length){ const x = out[0]; out.push({product:x.product, bin:bin(), batch:x.batch, uom:x.uom, book:0, counted:int(1, 6), recount:true, note:'Found in a second bin.'}); }
+    return out;
+  };
   const mk = (age, o) => {
     const id = String(++n), accName = wpick(ACC.map(a => [a.a, a.w])), acc = o.acc || ACC.find(x => x.a === accName);
-    const person = pick(acc.people), cat = o.cat || wpick(TW), prio = o.prio || (rnd() < .12 ? 'urgent' : rnd() < .32 ? 'high' : 'normal');
+    const person = o.person || pick(acc.people), prio = o.prio || (rnd() < .1 ? 'urgent' : rnd() < .3 ? 'high' : 'normal');
     const createdAt = now - age, tH = DEFAULT_TARGETS[prio];
-    const r = {account:acc.a, category:cat, priority:prio, subject:o.subject || pick(T[cat])(), details:o.details || '', refs:o.refs || (rnd() < .7 ? (rnd() < .5 ? 'PO 45000' + digits(5) : 'SKU ' + digits(5)) : ''),
-      neededBy:'', status:'new', owner:'', resolution:'', source:rnd() < .1 ? 'ceva' : 'portal', createdAt, createdBy:'demo-' + person[0], createdByName:person[0], createdByEmail:person[1],
-      updatedAt:createdAt, closedAt:null, firstResponseAt:null, lastReplyAt:null, lastReplyBy:''};
+    const lines = o.lines || mkLines(acc, wpick([[1, 5], [2, 4], [3, 3], [5, 2], [8, 1]]));
+    const r = {account:acc.a, reason:o.reason || wpick(RW), priority:prio, subject:o.subject || autoTitle(lines), details:o.details || '', refs:o.refs || '',
+      neededBy:'', status:'new', owner:'', resolution:'', source:rnd() < .08 ? 'ceva' : 'portal', createdAt, createdBy:'demo-' + person[0], createdByName:person[0], createdByEmail:person[1],
+      updatedAt:createdAt, closedAt:null, firstResponseAt:null, lastReplyAt:null, lastReplyBy:'',
+      lines, results:[], piDoc:'', scheduledFor:'', countedAt:null, approval:'', approvalBy:'', approvalAt:null};
     let st = o.status;
-    if(!st){
-      const ageD = age / DAY;
-      st = ageD > 9 ? 'closed' : ageD < .15 ? 'new' : wpick([['closed', ageD > 5 ? 40 : ageD > 2 ? 9 : 3], ['in_progress', 3], ['waiting', 1], ['new', ageD < 1 ? 2 : .3]]);
+    if(!st){ const ageD = age / DAY; st = ageD > 8 ? 'closed' : ageD < .12 ? 'new' : wpick([['closed', ageD > 4 ? 30 : ageD > 2 ? 6 : 2], ['scheduled', ageD < 2 ? 2 : .3], ['counting', 1.2], ['review', .8], ['approved', .4], ['new', ageD < 1 ? 1.5 : .2]]); }
+    const order = ['new', 'scheduled', 'counting', 'review', 'approved', 'closed'], lvl = order.indexOf(st);
+    const at = (t, max) => Math.min(max == null ? now - 3 * 6e4 : max, t);
+    if(lvl >= 1){
+      r.owner = o.owner || pick(OWN); r.piDoc = o.piDoc || '20000' + digits(5);
+      r.firstResponseAt = at(createdAt + (prio === 'urgent' ? .3 + rnd() : .5 + rnd() * 5) * HOUR);
+      r.scheduledFor = o.scheduledFor || dayOf(Math.min(createdAt + int(0, Math.max(0, Math.floor(tH / 24) - 1)) * DAY, lvl === 1 ? now + DAY : now));
+      addNote(id, {kind:'status', text:'Scheduled for ' + fmtNeed(r.scheduledFor) + ' · Counter: ' + r.owner + ' · EWM PI document ' + r.piDoc, at:r.firstResponseAt, byName:r.owner});
     }
-    if(st !== 'new'){
-      r.owner = o.owner || pick(OWN);
-      r.firstResponseAt = Math.min(now - 6e4, createdAt + (prio === 'urgent' ? .2 + rnd() : .5 + rnd() * 5) * HOUR);
-      addNote(id, {kind:'status', text:'Assigned to ' + r.owner, at:r.firstResponseAt - 6e4, byName:r.owner});
-      addNote(id, {text:o.reply || pick(['Thanks, we’re on it.', 'Got it. Checking with the floor now.', 'Looking into this today.']), at:r.firstResponseAt, byName:r.owner});
-      r.lastReplyAt = r.firstResponseAt; r.lastReplyBy = 'ceva';
-    }
-    if(st === 'closed'){
-      let close = createdAt + tH * HOUR * (.15 + Math.pow(rnd(), 1.4) * 1.15);
-      if(close > now - 30 * 6e4) close = now - (10 + rnd() * 60) * 6e4;
-      close = Math.max(close, (r.firstResponseAt || createdAt) + 30 * 6e4);
-      if(close >= now){ st = 'in_progress'; } else {
-        r.closedAt = close; r.resolution = o.resolution || pick(RES);
-        if(rnd() < .25 && close - r.firstResponseAt > 3 * HOUR){
-          addNote(id, {text:'Can you confirm the quantity?', at:r.firstResponseAt + HOUR, byName:r.owner});
-          addNote(id, {side:'customer', text:'Yes, 14 units.', at:r.firstResponseAt + 2 * HOUR, byName:person[0]});
-        }
-        addNote(id, {kind:'status', text:'Closed: ' + r.resolution, at:close, byName:r.owner});
+    if(lvl >= 2){ addNote(id, {kind:'status', text:'Counting started', at:at(r.firstResponseAt + HOUR), byName:r.owner}); }
+    if(lvl >= 3 || o.recount){
+      r.results = o.results || mkResults(lines, o.off);
+      let c = createdAt + tH * HOUR * (.2 + Math.pow(rnd(), 1.5) * 1.05);
+      c = Math.max(c, r.firstResponseAt + 2 * HOUR);
+      r.countedAt = at(c, now - (st === 'closed' ? 2 * HOUR : 20 * 6e4));
+      const s = statsOf(r.results), summary = plural(s.n, 'line') + ', ' + (s.off ? s.off + ' with a difference, ' + netText(r.results) : 'no difference');
+      const needOk = s.off > 0;
+      addNote(id, {kind:'status', text:'Results posted: ' + summary + (needOk && st !== 'closed' ? '. Waiting for approval.' : needOk ? '. Waiting for approval.' : '. Completed.'), at:r.countedAt, byName:r.owner});
+      if(st === 'review' && !needOk) st = 'closed';
+      if(needOk && (st === 'approved' || st === 'closed')){
+        r.approval = 'approved'; r.approvalBy = person[0]; r.approvalAt = at(r.countedAt + (.5 + rnd() * 18) * HOUR, now - 10 * 6e4);
+      }
+      if(st === 'closed'){
+        r.closedAt = needOk ? at(r.approvalAt + (.3 + rnd() * 5) * HOUR, now - 5 * 6e4) : r.countedAt;
+        r.resolution = needOk ? 'Difference of ' + netText(r.results).replace(/^net /, 'net ') + ' posted in EWM, PI document ' + r.piDoc + '.' : 'Counted ' + summary + '. Nothing to post.';
+        if(needOk) addNote(id, {kind:'status', text:'Completed: ' + r.resolution, at:r.closedAt, byName:r.owner});
       }
     }
-    const after = (base, t) => Math.min(now - 2 * 6e4, Math.max(base + 10 * 6e4, t));
-    if(st === 'waiting'){ const t = after(r.firstResponseAt, now - age * .3); addNote(id, {kind:'status', text:'Status: Waiting on customer', at:t, byName:r.owner}); addNote(id, {text:o.ask || 'Can you send the packing list or a photo of the label?', at:t + 3e4, byName:r.owner}); r.lastReplyAt = t + 3e4; }
-    if(st === 'in_progress' && o.replied !== false && (o.replied || rnd() < .25)){ const t = after(r.firstResponseAt, now - age * .2); addNote(id, {side:'customer', text:o.custReply || 'Any update on this? The store is asking.', at:t, byName:person[0]}); r.lastReplyAt = t; r.lastReplyBy = 'customer'; }
-    if(st !== 'new' && rnd() < .3) addNote(id, {internal:true, text:pick(['Checked WMS: 3 cartons are in QC hold.', 'Carrier says the trailer is at the yard gate.', 'Billing team looking at the accessorial.']), at:(r.firstResponseAt || createdAt) + 20 * 6e4, byName:r.owner});
-    r.status = st; r.updatedAt = Math.max(createdAt, r.closedAt || 0, r.lastReplyAt || 0);
+    if(o.recount){ r.approval = 'recount'; r.approvalBy = person[0]; r.approvalAt = now - 3 * HOUR; addNote(id, {side:'customer', text:'Recount requested: ' + o.recount, at:r.approvalAt, byName:person[0]}); r.lastReplyAt = r.approvalAt; r.lastReplyBy = 'customer'; }
+    if(o.reply){ addNote(id, {text:o.reply, at:at(r.firstResponseAt + 20 * 6e4), byName:r.owner}); r.lastReplyAt = at(r.firstResponseAt + 20 * 6e4); r.lastReplyBy = 'ceva'; }
+    if(lvl >= 1 && rnd() < .2) addNote(id, {internal:true, text:pick(['Bin A-07-02 blocked for re-slot until Friday.', 'Customer’s EWM snapshot is from Monday; book qty may have moved.', 'Second counter: J. Ruiz.']), at:at(r.firstResponseAt + 30 * 6e4), byName:r.owner});
+    r.status = st; r.updatedAt = Math.max(createdAt, r.closedAt || 0, r.countedAt || 0, r.approvalAt || 0, r.lastReplyAt || 0);
     reqs[id] = r;
   };
-  ages.forEach(a => mk(a, {}));
-  const NW = ACC[0], CO = ACC[1], FB_ = ACC[2];
-  mk(5 * HOUR, {acc:NW, cat:'Receiving or ASN', prio:'high', status:'waiting', subject:'ASN 77135 received short 3 cartons', refs:'ASN 77135, PO 4500021090', details:'Our ASN shows 48 cartons; your receipt shows 45. Can you check the trailer and the dock?', owner:'A. Ortiz', reply:'Checking the trailer and the putaway now.', ask:'We found 45 on the trailer. Can you send the packing list from the vendor so we can compare carton IDs?'});
-  mk(3 * HOUR, {acc:NW, cat:'Order change or expedite', prio:'urgent', status:'in_progress', replied:false, subject:'Expedite PO 4500021187 to ship today', refs:'PO 4500021187', details:'Store opening Saturday. Needs to leave today on any carrier that delivers Friday.', owner:'K. Bell', reply:'On it. Picking now; we’re booking FedEx Freight for a Friday delivery.'});
-  mk(50 * 6e4, {acc:CO, cat:'Inventory question or adjustment', prio:'urgent', status:'new', subject:'Lot 2245A showing on hold', refs:'Lot 2245A, SKU 30214', details:'We need to ship this lot to a hospital tomorrow. Why is it on hold?'});
-  mk(12 * 6e4, {acc:FB_, cat:'Shipping or carrier issue', prio:'high', status:'new', subject:'Carrier missed pickup window', refs:'BOL 33891'});
-  mk(30 * HOUR, {acc:CO, cat:'Returns (RMA)', prio:'normal', status:'waiting', subject:'Process RMA 10482, 14 units', refs:'RMA 10482', owner:'M. Tran', reply:'Received the 14 units at the returns dock.', ask:'Should these go back to stock, or be held for inspection?'});
-  mk(26 * HOUR, {acc:CO, cat:'Billing or invoice', prio:'normal', status:'in_progress', replied:true, subject:'Accessorial charge on invoice 55021', owner:'J. Ruiz', custReply:'We didn’t request liftgate on that shipment. Please review.'});
+  const ages = [];
+  for(let i = 0; i < 140; i++) ages.push(Math.pow(rnd(), 1.25) * 200 * DAY + 2 * HOUR);
+  ages.sort((a, b) => b - a).forEach(a => mk(a, {}));
+  const NW = ACC[0], CO = ACC[1], FBF = ACC[2];
+  const L = (acc, i, extra) => Object.assign({product:acc.prods[i].product, bin:acc.prods[i].bin, batch:acc.prods[i].batches ? acc.prods[i].batches[0] : '', uom:acc.prods[i].uom, book:null}, extra || {});
+  const nwLines = [L(NW, 0, {book:120}), L(NW, 1, {book:48}), L(NW, 2, {bin:''})];
+  mk(26 * HOUR, {acc:NW, person:NW.people[0], prio:'high', status:'review', reason:DEFAULT_REASONS[2], lines:nwLines, subject:'Count ' + NW.prods[0].product + ' and 2 more before Black Friday promo',
+    results:[{product:nwLines[0].product, bin:nwLines[0].bin, batch:'', uom:'EA', book:120, counted:116, recount:true, note:'Recounted by second counter, same result.'}, {product:nwLines[1].product, bin:nwLines[1].bin, batch:'', uom:'EA', book:48, counted:48, recount:false, note:''}, {product:nwLines[2].product, bin:'C-04-02', batch:'', uom:'EA', book:210, counted:210, recount:false, note:''}, {product:nwLines[2].product, bin:'C-19-01', batch:'', uom:'EA', book:0, counted:0, recount:false, note:'Empty, as expected.'}]});
+  mk(20 * HOUR, {acc:NW, person:NW.people[1], prio:'normal', status:'scheduled', reason:DEFAULT_REASONS[7], lines:[3, 4, 5, 6, 7].map(i => L(NW, i)), subject:'Routine count, aisle C', scheduledFor:dayOf(now + DAY), owner:'M. Tran'});
+  mk(45 * 6e4, {acc:CO, person:CO.people[0], prio:'urgent', status:'new', reason:DEFAULT_REASONS[5], lines:[L(CO, 0, {book:40}), L(CO, 1, {book:12})], subject:'Batch ' + CO.prods[0].batches[0] + ' short in EWM before hospital shipment', details:'We have an order for 40 tomorrow morning. EWM shows 40, the pick came up short yesterday.'});
+  mk(30 * HOUR, {acc:FBF, person:FBF.people[0], prio:'high', status:'counting', reason:DEFAULT_REASONS[0], lines:[L(FBF, 0, {book:120})], subject:'Count ' + FBF.prods[0].product + ' in ' + FBF.prods[0].bin, owner:'A. Ortiz', off:[FBF.prods[0].product],
+    recount:'Our EWM shows 120 CS in ' + FBF.prods[0].bin + '. 112 seems low; please check the pallet behind it.'});
+  mk(40 * HOUR, {acc:CO, person:CO.people[1], prio:'normal', status:'approved', reason:DEFAULT_REASONS[1], lines:[L(CO, 2), L(CO, 3)], off:[CO.prods[2].product], owner:'J. Ruiz'});
   return {
     counter:n, reqs, notes, nid,
-    config:{portalName:'', types:DEFAULT_TYPES, targets:DEFAULT_TARGETS, owners:OWN, showTargets:true},
+    config:{portalName:'', reasons:DEFAULT_REASONS, targets:DEFAULT_TARGETS, owners:OWN, showTargets:true, approvalRequired:true},
     people:[
       {id:'demo-staff', role:'admin', name:'K. Bell', email:'k.bell@ceva.example'},
       {id:'u-aortiz', role:'agent', name:'A. Ortiz', email:'a.ortiz@ceva.example'},
@@ -1762,6 +2276,7 @@ function demoStore(){
   const L = new Set();
   const emit = () => setTimeout(() => L.forEach(f => f()), 0);
   const watch = f => { L.add(f); setTimeout(f, 0); return () => L.delete(f); };
+  const clone = o => JSON.parse(JSON.stringify(o));
   return {
     kind:'demo',
     watchRequests:(scope, cb) => watch(() => cb(Object.keys(D.reqs).filter(id => !scope.account || D.reqs[id].account === scope.account).map(id => normReq(id, D.reqs[id])), false)),
@@ -1769,9 +2284,9 @@ function demoStore(){
     watchNotes:(rid, staff, cb) => watch(() => cb((D.notes[rid] || []).filter(x => staff || !x.internal).map(x => normNote(x.id, x, x.internal)))),
     watchPeople:cb => watch(() => cb(D.people.slice())),
     watchAccess:cb => watch(() => cb(D.access.slice())),
-    createRequest:data => { const id = String(++D.counter); D.reqs[id] = Object.assign({}, data); emit(); return Promise.resolve(id); },
+    createRequest:data => { const id = String(++D.counter); D.reqs[id] = clone(data); emit(); return Promise.resolve(id); },
     write:(rid, patch, note, internal) => {
-      if(patch && D.reqs[rid]) Object.assign(D.reqs[rid], patch);
+      if(patch && D.reqs[rid]) Object.assign(D.reqs[rid], clone(patch));
       if(note) (D.notes[rid] = D.notes[rid] || []).push(Object.assign({id:'d' + (++D.nid), internal:!!internal}, note));
       emit(); return Promise.resolve();
     },
@@ -1796,18 +2311,17 @@ function fbStore(fb){
         return Fs.onSnapshot(Fs.query(C('requests'), Fs.where('account', '==', scope.account)), opt,
           s => cb(s.docs.map(d => normReq(d.id, d.data())), s.metadata.fromCache), onErr);
       }
-      /* CEVA: everything still open, plus everything submitted in the last 400 days */
+      /* CEVA: everything still open, plus everything requested in the last 400 days */
       const parts = {open:null, recent:null}, cache = {open:true, recent:true};
       const emit = () => {
         if(!parts.open || !parts.recent) return;
-        const m = Object.assign({}, parts.recent, parts.open);
-        cb(Object.values(m), cache.open || cache.recent);
+        cb(Object.values(Object.assign({}, parts.recent, parts.open)), cache.open || cache.recent);
       };
       const sub = (key, q) => Fs.onSnapshot(q, opt, s => {
         const m = {}; s.docs.forEach(d => { m[d.id] = normReq(d.id, d.data()); });
         parts[key] = m; cache[key] = s.metadata.fromCache; emit();
       }, onErr);
-      const u1 = sub('open', Fs.query(C('requests'), Fs.where('status', 'in', ['new', 'in_progress', 'waiting'])));
+      const u1 = sub('open', Fs.query(C('requests'), Fs.where('status', 'in', ['new', 'scheduled', 'counting', 'review', 'approved'])));
       const u2 = sub('recent', Fs.query(C('requests'), Fs.where('createdAt', '>=', Date.now() - 400 * DAY)));
       return () => { u1(); u2(); };
     },
@@ -1822,7 +2336,7 @@ function fbStore(fb){
     watchPeople:cb => Fs.onSnapshot(C('roles'), s => cb(s.docs.map(d => Object.assign({}, d.data(), {id:d.id}))), () => cb([])),
     watchAccess:cb => Fs.onSnapshot(C('access'), s => cb(s.docs.map(d => Object.assign({}, d.data(), {id:d.id}))), () => cb([])),
     createRequest(data){
-      /* The request number comes from a counter bumped in the same transaction, so numbers never repeat or skip. */
+      /* The count number comes from a counter bumped in the same transaction, so numbers never repeat or skip. */
       return Fs.runTransaction(fs, async tx => {
         const ref = D('counters', 'requests');
         const c = await tx.get(ref);
@@ -1851,7 +2365,7 @@ function stopRole(){
 }
 showGate('wait');
 (async function connect(){
-  try{ const d = Number(localStorage.getItem('reqDashDays')); if([30, 90, 365].includes(d)){ S.dashDays = d; $('#dPeriod').value = String(d); } }catch(_){}
+  try{ const d = Number(localStorage.getItem('ccDashDays')); if([30, 90, 365].includes(d)) S.dashDays = d; }catch(_){}
   const cfg = window.FIREBASE_CONFIG;
   if(!cfg || !cfg.apiKey || /PASTE/i.test(cfg.apiKey + cfg.projectId)){ showGate('setup'); return; }
   let A, F, Fs;

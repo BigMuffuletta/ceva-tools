@@ -1,16 +1,19 @@
 rules_version = '2';
 
-// Customer request tracker — Firestore security rules.
+// Cycle count requests — Firestore security rules.
 // Paste into Firebase console → Firestore Database → Rules, then Publish.
 //
 // Who can do what is set by roles/{uid}:
-//   customer → { role: 'customer', account: 'Acme Foods', name }
-//              Submits requests and sees only its own account's requests and replies.
-//   agent    → CEVA team. Sees every account; updates, replies to and closes requests.
-//   admin    → CEVA admin. Also manages people and portal settings.
+//   customer → { role: 'customer', account: 'Northwind Apparel', name }
+//              Requests counts and sees only its own account's counts, results and replies.
+//              Approves the difference (or asks for a recount) once CEVA posts results.
+//   agent    → CEVA team. Sees every account; schedules, counts, posts results, completes.
+//   admin    → CEVA admin. Also manages people and settings.
 // Anyone signed in without a role can only ask for access (access/{uid}).
 //
-// Requests are numbered from counters/requests in the same transaction (#1001, #1002, ...).
+// A count request holds what to count (lines: product, storage bin, batch, UoM, book qty from EWM)
+// and what was found (results, written by CEVA only). Counts are numbered from counters/requests
+// in the same transaction (CC-1001, CC-1002, ...).
 // Replies the customer sees live in requests/{id}/thread; CEVA-only notes in requests/{id}/internal.
 // Neither can be edited or deleted, so the history stays intact.
 
@@ -30,27 +33,34 @@ service cloud.firestore {
     function text(v, max)   { return v is string && v.size() <= max; }
     function filled(v, max) { return v is string && v.size() > 0 && v.size() <= max; }
     function numOrNull(v)   { return v == null || v is number; }
+    function dateOrBlank(v) { return v == '' || (v is string && v.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')); }
 
     function validRequest(d) {
-      let keys = ['account', 'category', 'priority', 'subject', 'details', 'refs', 'neededBy',
+      let keys = ['account', 'reason', 'priority', 'subject', 'details', 'refs', 'neededBy',
                   'status', 'owner', 'resolution', 'source',
                   'createdAt', 'createdBy', 'createdByName', 'createdByEmail', 'updatedAt',
-                  'closedAt', 'firstResponseAt', 'lastReplyAt', 'lastReplyBy'];
+                  'closedAt', 'firstResponseAt', 'lastReplyAt', 'lastReplyBy',
+                  'lines', 'results', 'piDoc', 'scheduledFor', 'countedAt',
+                  'approval', 'approvalBy', 'approvalAt'];
       return d.keys().hasOnly(keys) && d.keys().hasAll(keys)
-        && filled(d.account, 60) && text(d.category, 60)
+        && filled(d.account, 60) && text(d.reason, 80)
         && d.priority in ['normal', 'high', 'urgent']
         && filled(d.subject, 120) && text(d.details, 4000) && text(d.refs, 300)
-        && (d.neededBy == '' || (d.neededBy is string && d.neededBy.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')))
-        && d.status in ['new', 'in_progress', 'waiting', 'closed']
+        && dateOrBlank(d.neededBy) && dateOrBlank(d.scheduledFor)
+        && d.status in ['new', 'scheduled', 'counting', 'review', 'approved', 'closed']
         && text(d.owner, 60) && text(d.resolution, 2000)
         && d.source in ['portal', 'ceva']
         && d.createdAt is number && d.updatedAt is number
         && filled(d.createdBy, 128) && text(d.createdByName, 60) && text(d.createdByEmail, 120)
         && numOrNull(d.closedAt) && numOrNull(d.firstResponseAt) && numOrNull(d.lastReplyAt)
-        && d.lastReplyBy in ['', 'customer', 'ceva'];
+        && d.lastReplyBy in ['', 'customer', 'ceva']
+        && d.lines is list && d.lines.size() > 0 && d.lines.size() <= 200
+        && d.results is list && d.results.size() <= 300
+        && text(d.piDoc, 60) && numOrNull(d.countedAt)
+        && d.approval in ['', 'approved', 'recount'] && text(d.approvalBy, 60) && numOrNull(d.approvalAt);
     }
 
-    // The running request number. Only ever goes up by one, together with the new request.
+    // The running count number. Only ever goes up by one, together with the new request.
     match /counters/requests {
       allow read: if isStaff() || isCustomer();
       allow create: if (isStaff() || isCustomer())
@@ -78,20 +88,32 @@ service cloud.firestore {
               && request.resource.data.closedAt == null
               && request.resource.data.firstResponseAt == null
               && request.resource.data.lastReplyAt == null
-              && request.resource.data.lastReplyBy == ''));
+              && request.resource.data.lastReplyBy == ''
+              && request.resource.data.results.size() == 0
+              && request.resource.data.scheduledFor == ''
+              && request.resource.data.countedAt == null
+              && request.resource.data.approval == ''
+              && request.resource.data.approvalBy == ''
+              && request.resource.data.approvalAt == null));
 
       // CEVA can change anything but who created it and when.
-      // A customer can only record a reply, which moves "waiting on customer" back to "in progress".
+      // A customer can only (a) record a reply, or (b) when results are waiting for approval,
+      // approve the difference or send it back for a recount. Lines and results stay as they are.
       allow update: if validRequest(request.resource.data)
         && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.createdBy == resource.data.createdBy
         && (isStaff() || (isCustomer()
               && resource.data.account == myAccount()
               && resource.data.status != 'closed'
-              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt', 'lastReplyAt', 'lastReplyBy'])
-              && request.resource.data.lastReplyBy == 'customer'
-              && (request.resource.data.status == resource.data.status
-                  || (resource.data.status == 'waiting' && request.resource.data.status == 'in_progress'))));
+              && ((request.resource.data.diff(resource.data).affectedKeys().hasOnly(['updatedAt', 'lastReplyAt', 'lastReplyBy'])
+                   && request.resource.data.lastReplyBy == 'customer')
+                  || (resource.data.status == 'review'
+                   && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'approval', 'approvalBy', 'approvalAt', 'updatedAt', 'lastReplyAt', 'lastReplyBy'])
+                   && request.resource.data.approvalAt is number
+                   && filled(request.resource.data.approvalBy, 60)
+                   && (request.resource.data.lastReplyBy == resource.data.lastReplyBy || request.resource.data.lastReplyBy == 'customer')
+                   && ((request.resource.data.status == 'approved' && request.resource.data.approval == 'approved')
+                       || (request.resource.data.status == 'counting' && request.resource.data.approval == 'recount'))))));
 
       allow delete: if isAdmin();
 
@@ -124,7 +146,7 @@ service cloud.firestore {
       }
     }
 
-    // Portal name, request types, close-time targets, owner names.
+    // Portal name, count reasons, targets, approval setting, counter names.
     match /config/{docId} {
       allow read: if hasRole();
       allow write: if isAdmin() && request.resource.data.size() <= 30;

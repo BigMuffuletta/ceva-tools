@@ -1,4 +1,4 @@
-// Security rules tests for the customer request tracker.
+// Security rules tests for cycle count requests.
 // Run from this folder:  npm install  &&  npm test
 // (Starts the Firestore emulator, so it needs Java 11+.)
 import { test, before, after, beforeEach } from 'node:test';
@@ -20,15 +20,20 @@ const ROLES = {
   broken: { role: 'customer', name: 'No account' }
 };
 
+const LINES = [{ product: 'NW104233', bin: 'A-12-03', batch: '', uom: 'EA', book: 120 }, { product: 'NW104240', bin: '', batch: '', uom: 'EA', book: null }];
+const RESULTS = [{ product: 'NW104233', bin: 'A-12-03', batch: '', uom: 'EA', book: 120, counted: 116, recount: true, note: '' }];
 function req(over = {}) {
   return Object.assign({
-    account: 'Northwind Apparel', category: 'Order change or expedite', priority: 'high',
-    subject: 'Expedite PO 4500021187', details: 'Needs to ship today.', refs: 'PO 4500021187', neededBy: '',
+    account: 'Northwind Apparel', reason: 'Our system doesn’t match your inventory report', priority: 'high',
+    subject: 'Count NW104233 before promo', details: 'EWM shows 120, store says less.', refs: '', neededBy: '',
     status: 'new', owner: '', resolution: '', source: 'portal',
     createdAt: NOW, createdBy: 'custA', createdByName: 'Dana Lee', createdByEmail: 'dana@northwind.example', updatedAt: NOW,
-    closedAt: null, firstResponseAt: null, lastReplyAt: null, lastReplyBy: ''
+    closedAt: null, firstResponseAt: null, lastReplyAt: null, lastReplyBy: '',
+    lines: LINES, results: [], piDoc: '', scheduledFor: '', countedAt: null,
+    approval: '', approvalBy: '', approvalAt: null
   }, over);
 }
+const posted = { status: 'review', results: RESULTS, countedAt: NOW + 100, owner: 'K. Bell' };
 const note = (by, over = {}) => Object.assign({ text: 'Hello', at: NOW, by, byName: 'Someone', side: 'customer', kind: 'msg' }, over);
 
 const db = uid => env.authenticatedContext(uid, { email: uid + '@example.com' }).firestore();
@@ -47,7 +52,7 @@ async function submit(fs, data) {
 
 before(async () => {
   env = await initializeTestEnvironment({
-    projectId: 'demo-ceva-requests',
+    projectId: 'demo-ceva-cycle-counts',
     firestore: { rules: readFileSync(new URL('../firestore.rules', import.meta.url), 'utf8'), host: '127.0.0.1', port: 8080 }
   });
 });
@@ -100,7 +105,7 @@ test('customers see replies but never internal notes', async () => {
 test('CEVA team reads every account', async () => {
   const fs = db('agent');
   await assertSucceeds(getDocs(collection(fs, 'requests')));
-  await assertSucceeds(getDocs(query(collection(fs, 'requests'), where('status', 'in', ['new', 'in_progress', 'waiting']))));
+  await assertSucceeds(getDocs(query(collection(fs, 'requests'), where('status', 'in', ['new', 'scheduled', 'counting', 'review', 'approved']))));
   await assertSucceeds(getDoc(doc(fs, 'requests/1002')));
 });
 
@@ -131,6 +136,16 @@ test('a customer cannot submit for another account or pre-fill CEVA fields', asy
   await assertFails(submit(fs, req({ extra: 'field' })));
   await assertFails(submit(fs, req({ subject: '' })));
   await assertFails(submit(fs, req({ priority: 'asap' })));
+  await assertFails(submit(fs, req({ results: RESULTS })));
+  await assertFails(submit(fs, req({ countedAt: NOW })));
+  await assertFails(submit(fs, req({ approval: 'approved', approvalBy: 'Dana Lee', approvalAt: NOW })));
+  await assertFails(submit(fs, req({ scheduledFor: '2026-11-07' })));
+  await assertFails(submit(fs, req({ lines: [] })));
+  await assertFails(submit(fs, req({ lines: 'NW104233' })));
+});
+
+test('a customer can name an EWM PI document when requesting', async () => {
+  await assertSucceeds(submit(db('custA'), req({ piDoc: '2000001234' })));
 });
 
 test('request numbers cannot be skipped or reused', async () => {
@@ -153,16 +168,38 @@ test('a customer replies on its own open request', async () => {
   await assertSucceeds(b.commit());
 });
 
-test('a customer reply moves "waiting on customer" back to in progress, and nothing else', async () => {
-  await setReq('1001', { status: 'waiting' });
-  const fs = db('custA');
-  await assertSucceeds(updateDoc(doc(fs, 'requests/1001'), { status: 'in_progress', lastReplyAt: NOW, lastReplyBy: 'customer', updatedAt: NOW }));
-  await assertFails(updateDoc(doc(fs, 'requests/1001'), { status: 'closed', lastReplyAt: NOW, lastReplyBy: 'customer', updatedAt: NOW }));
+test('a customer approves the difference once results are posted', async () => {
+  await setReq('1001', posted);
+  await assertSucceeds(updateDoc(doc(db('custA2'), 'requests/1001'), { status: 'approved', approval: 'approved', approvalBy: 'Sam Ortiz', approvalAt: NOW + 200, updatedAt: NOW + 200 }));
 });
 
-test('a customer cannot change status, owner, priority or account', async () => {
+test('a customer sends results back for a recount, with a reply', async () => {
+  await setReq('1001', posted);
+  const fs = db('custA');
+  const b = writeBatch(fs);
+  b.set(doc(fs, 'requests/1001/thread/r1'), note('custA', { text: 'EWM shows 120 in that bin, please recount.' }));
+  b.update(doc(fs, 'requests/1001'), { status: 'counting', approval: 'recount', approvalBy: 'Dana Lee', approvalAt: NOW + 200, updatedAt: NOW + 200, lastReplyAt: NOW + 200, lastReplyBy: 'customer' });
+  await assertSucceeds(b.commit());
+});
+
+test('approving only works on posted results, for your own account, the right way', async () => {
+  const ok = { status: 'approved', approval: 'approved', approvalBy: 'Dana Lee', approvalAt: NOW, updatedAt: NOW };
+  await assertFails(updateDoc(doc(db('custA'), 'requests/1001'), ok));            // nothing posted yet
+  await setReq('1001', posted);
+  await assertFails(updateDoc(doc(db('custB'), 'requests/1001'), ok));            // other account
+  await assertFails(updateDoc(doc(db('custA'), 'requests/1001'), Object.assign({}, ok, { status: 'closed' })));
+  await assertFails(updateDoc(doc(db('custA'), 'requests/1001'), Object.assign({}, ok, { status: 'counting' })));
+  await assertFails(updateDoc(doc(db('custA'), 'requests/1001'), Object.assign({}, ok, { approvalBy: '' })));
+  await assertFails(updateDoc(doc(db('custA'), 'requests/1001'), Object.assign({}, ok, { results: [] })));
+  await assertFails(updateDoc(doc(db('custA'), 'requests/1001'), Object.assign({}, ok, { lastReplyBy: 'ceva' })));
+});
+
+test('a customer cannot write results, edit lines, or change status, owner, priority or account', async () => {
   const fs = db('custA');
   const base = { lastReplyAt: NOW, lastReplyBy: 'customer', updatedAt: NOW };
+  await assertFails(updateDoc(doc(fs, 'requests/1001'), Object.assign({ results: RESULTS, countedAt: NOW }, base)));
+  await assertFails(updateDoc(doc(fs, 'requests/1001'), Object.assign({ lines: [LINES[0]] }, base)));
+  await assertFails(updateDoc(doc(fs, 'requests/1001'), Object.assign({ piDoc: '2000009999' }, base)));
   await assertFails(updateDoc(doc(fs, 'requests/1001'), Object.assign({ status: 'closed' }, base)));
   await assertFails(updateDoc(doc(fs, 'requests/1001'), Object.assign({ owner: 'Me' }, base)));
   await assertFails(updateDoc(doc(fs, 'requests/1001'), Object.assign({ priority: 'urgent' }, base)));
@@ -188,20 +225,25 @@ test('nobody edits or deletes the history', async () => {
 });
 
 /* ---------- CEVA team ---------- */
-test('CEVA team updates, replies and closes', async () => {
+test('CEVA team schedules, posts results and completes', async () => {
   const fs = db('agent');
+  await assertSucceeds(updateDoc(doc(fs, 'requests/1001'), { status: 'scheduled', scheduledFor: '2026-11-07', piDoc: '2000001234', owner: 'K. Bell', firstResponseAt: NOW + 5, updatedAt: NOW + 5 }));
+  await assertSucceeds(updateDoc(doc(fs, 'requests/1001'), { status: 'review', results: RESULTS, countedAt: NOW + 50, updatedAt: NOW + 50 }));
+  await assertFails(updateDoc(doc(fs, 'requests/1001'), { results: 'counted' }));
+  await assertFails(updateDoc(doc(fs, 'requests/1001'), { scheduledFor: 'tomorrow' }));
   const b = writeBatch(fs);
-  b.update(doc(fs, 'requests/1001'), { status: 'closed', owner: 'K. Bell', resolution: 'Shipped today', closedAt: NOW + 50, firstResponseAt: NOW + 5, updatedAt: NOW + 50 });
-  b.set(doc(fs, 'requests/1001/thread/s1'), note('agent', { side: 'ceva', kind: 'status', text: 'Closed: Shipped today' }));
+  b.update(doc(fs, 'requests/1001'), { status: 'closed', resolution: 'Difference posted in EWM', closedAt: NOW + 90, updatedAt: NOW + 90 });
+  b.set(doc(fs, 'requests/1001/thread/s1'), note('agent', { side: 'ceva', kind: 'status', text: 'Completed: Difference posted in EWM' }));
   await assertSucceeds(b.commit());
   await assertSucceeds(setDoc(doc(fs, 'requests/1002/internal/i9'), note('agent', { side: 'ceva' })));
   await assertFails(setDoc(doc(fs, 'requests/1002/thread/t9'), note('agent', { side: 'customer' })));
   await assertFails(updateDoc(doc(fs, 'requests/1001'), { createdAt: 1 }));
   await assertFails(updateDoc(doc(fs, 'requests/1001'), { status: 'done' }));
+  await assertFails(updateDoc(doc(fs, 'requests/1001'), { lines: [] }));
 });
 
 test('CEVA team logs a request on behalf of any account', async () => {
-  await assertSucceeds(submit(db('agent'), req({ account: 'Fabrikam Foods', source: 'ceva', createdBy: 'agent', status: 'in_progress', owner: 'K. Bell' })));
+  await assertSucceeds(submit(db('agent'), req({ account: 'Fabrikam Foods', source: 'ceva', createdBy: 'agent', status: 'scheduled', scheduledFor: '2026-11-07', owner: 'K. Bell' })));
 });
 
 test('only admins delete requests', async () => {
